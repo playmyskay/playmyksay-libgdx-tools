@@ -58,16 +58,6 @@ public class Octree {
 				newRootNode.boundingBox.set(min, max);
 
 				int index = Math.abs(7 - near);
-				/*
-				if (near == 0) index = 7;
-				if (near == 1) index = 6;
-				if (near == 2) index = 5;
-				if (near == 3) index = 4;
-				if (near == 4) index = 3;
-				if (near == 5) index = 2;
-				if (near == 6) index = 1;
-				if (near == 7) index = 0;
-				*/
 				System.out.println(newRootNode.boundingBox.getCenter(new Vector3()));
 				newRootNode.childs = new OctreeNode[8];
 				newRootNode.childs[index] = rootNode;
