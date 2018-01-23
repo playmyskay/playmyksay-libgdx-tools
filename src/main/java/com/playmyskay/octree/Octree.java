@@ -21,10 +21,10 @@ public class Octree<N extends OctreeNode<N, D>, D extends OctreeNodeDescriptor> 
 		}
 	}
 
-	public void setNode (Vector3 v, D descriptor) {
+	public N setNode (Vector3 v, D descriptor) {
 		if (!rootNode.boundingBox.contains(v)) {
 			if (descriptor.type == Type.remove) {
-				return;
+				return null;
 			}
 
 			Vector3 cnt = new Vector3();
@@ -79,15 +79,16 @@ public class Octree<N extends OctreeNode<N, D>, D extends OctreeNodeDescriptor> 
 		}
 
 		N currentNode = rootNode;
+		BoundingBox boundingBox = new BoundingBox();
 		if (descriptor.type == Type.add) {
 			for (int level = treeLevel; level >= 0 && currentNode != null; --level) {
-				currentNode = next(v, level, currentNode, descriptor, new BoundingBox());
+				currentNode = next(v, level, currentNode, descriptor, boundingBox);
 			}
 		} else if (descriptor.type == Type.remove) {
 			N lastNode = rootNode;
 			for (int level = treeLevel; level >= 0 && currentNode != null; --level) {
 				lastNode = currentNode;
-				currentNode = next(v, level, currentNode, descriptor, new BoundingBox());
+				currentNode = next(v, level, currentNode, descriptor, boundingBox);
 			}
 
 			if (currentNode == null) {
@@ -135,6 +136,7 @@ public class Octree<N extends OctreeNode<N, D>, D extends OctreeNodeDescriptor> 
 			}
 		}
 
+		return currentNode;
 	}
 
 	public void setNode (OctreePosition position) {
@@ -172,14 +174,17 @@ public class Octree<N extends OctreeNode<N, D>, D extends OctreeNodeDescriptor> 
 	public N next (Vector3 v, int level, N currentNode, D descriptor, BoundingBox boundingBox) {
 		for (int index = 0; index < 8; index++) {
 			if (descriptor.type == Type.add) {
-				if (currentNode.childs[index] == null) {
+				if (currentNode.childs == null || currentNode.childs[index] == null) {
 					calculateChildBounds(index, currentNode, boundingBox);
 					if (boundingBox.contains(v)) {
+						if (currentNode.childs == null) {
+							currentNode.childs = nodeProvider.createArray(level - 1, 8);
+						}
 						currentNode.childs[index] = nodeProvider.create(level);
 						currentNode.childs[index].parent = currentNode;
 						currentNode.childs[index].index = (byte) index;
 						currentNode.childs[index].boundingBox.set(boundingBox);
-						currentNode.childs[index].childs = nodeProvider.createArray(level, 8);
+						currentNode.childs[index].childs = nodeProvider.createArray(level - 1, 8);
 						return currentNode.childs[index];
 					}
 				} else {
