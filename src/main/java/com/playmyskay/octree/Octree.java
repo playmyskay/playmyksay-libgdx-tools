@@ -5,7 +5,7 @@ import com.badlogic.gdx.math.collision.BoundingBox;
 import com.playmyskay.octree.OctreeNodeDescriptor.Type;
 
 public class Octree<N extends OctreeNode<N, D>, D extends OctreeNodeDescriptor> {
-	public int treeLevel = 1;
+	public int curLevel = 0;
 	public N rootNode;
 	public IOctreeNodeProvider<N> nodeProvider;
 	private Vector3[] corners = new Vector3[8];
@@ -28,6 +28,8 @@ public class Octree<N extends OctreeNode<N, D>, D extends OctreeNodeDescriptor> 
 			}
 
 			Vector3 cnt = new Vector3();
+			Vector3 min = new Vector3();
+			Vector3 max = new Vector3();
 			while (!rootNode.boundingBox.contains(v)) {
 				corners[0] = getCorner(0, rootNode.boundingBox);
 				corners[1] = getCorner(1, rootNode.boundingBox);
@@ -58,35 +60,35 @@ public class Octree<N extends OctreeNode<N, D>, D extends OctreeNodeDescriptor> 
 				}
 
 				rootNode.boundingBox.getCenter(cnt);
-				Vector3 min = new Vector3().set(corners[far]);
-				Vector3 max = new Vector3().set(corners[near]).scl(2f);
+				min.set(corners[far]);
+				max.set(corners[near]).scl(2f);
 
-				N newRootNode = nodeProvider.create(treeLevel + 1);
+				N newRootNode = nodeProvider.create(curLevel + 1);
 				newRootNode.boundingBox.set(min, max);
 
 				// the new enclosing root node indexing the prior root node 
 				// in the diagonally node/corner instead of its nearest point.
 				// This is due to the fact the world should be expanded 
 				int index = Math.abs(7 - near);
-				newRootNode.childs = nodeProvider.createArray(treeLevel, 8);
+				newRootNode.childs = nodeProvider.createArray(curLevel, 8);
 				newRootNode.childs[index] = rootNode;
 				rootNode.parent = newRootNode;
 				rootNode.index = (byte) index;
 				rootNode = newRootNode;
 
-				treeLevel++;
+				curLevel++;
 			}
 		}
 
 		N currentNode = rootNode;
 		BoundingBox boundingBox = new BoundingBox();
 		if (descriptor.type == Type.add) {
-			for (int level = treeLevel; level >= 0 && currentNode != null; --level) {
+			for (int level = curLevel; level > 0 && currentNode != null; --level) {
 				currentNode = next(v, level, currentNode, descriptor, boundingBox);
 			}
 		} else if (descriptor.type == Type.remove) {
 			N lastNode = rootNode;
-			for (int level = treeLevel; level >= 0 && currentNode != null; --level) {
+			for (int level = curLevel; level >= 0 && currentNode != null; --level) {
 				lastNode = currentNode;
 				currentNode = next(v, level, currentNode, descriptor, boundingBox);
 			}
@@ -145,7 +147,9 @@ public class Octree<N extends OctreeNode<N, D>, D extends OctreeNodeDescriptor> 
 
 	public void calculateChildBounds (int index, N parentNode, BoundingBox out) {
 		// calculate bounding box
-		out.set(getCorner(index, parentNode.boundingBox), parentNode.boundingBox.getCenter(new Vector3()));
+		Vector3 corner = getCorner(index, parentNode.boundingBox);
+		Vector3 cnt = parentNode.boundingBox.getCenter(new Vector3());
+		out.set(corner, cnt);
 	}
 
 	public static Vector3 getCorner (int index, BoundingBox boundingBox) {
@@ -177,10 +181,11 @@ public class Octree<N extends OctreeNode<N, D>, D extends OctreeNodeDescriptor> 
 				if (currentNode.childs == null || currentNode.childs[index] == null) {
 					calculateChildBounds(index, currentNode, boundingBox);
 					if (boundingBox.contains(v)) {
+						if ((level - 1) < 0) throw new RuntimeException();
 						if (currentNode.childs == null) {
 							currentNode.childs = nodeProvider.createArray(level - 1, 8);
 						}
-						currentNode.childs[index] = nodeProvider.create(level);
+						currentNode.childs[index] = nodeProvider.create(level - 1);
 						currentNode.childs[index].parent = currentNode;
 						currentNode.childs[index].index = (byte) index;
 						currentNode.childs[index].boundingBox.set(boundingBox);

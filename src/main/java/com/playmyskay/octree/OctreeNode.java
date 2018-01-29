@@ -13,14 +13,14 @@ public abstract class OctreeNode<N extends OctreeNode<N, D>, D extends OctreeNod
 		return boundingBox.contains(v);
 	}
 
-	public int getLevel () {
-		int level = 0;
+	public int getDepth () {
+		int depth = 0;
 		N node = parent;
 		while (node != null) {
-			level++;
+			depth++;
 			node = node.parent;
 		}
-		return level;
+		return depth;
 	}
 
 	public abstract void update (N node, D descriptor);

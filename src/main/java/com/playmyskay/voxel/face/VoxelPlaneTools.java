@@ -165,7 +165,7 @@ public class VoxelPlaneTools {
 
 	private static VoxelLevelEntity[] createMask (VoxelLevelChunk chunk, VoxelComposite voxelComposite) {
 		VoxelLevelEntity[] mask = new VoxelLevelEntity[VoxelWorld.CHUNK_DIM];
-		int chunkLevel = chunk.getLevel();
+		int chunkLevel = chunk.getDepth();
 		VoxelLevel voxelLevel = chunk;
 		for (int index = 0; index < VoxelWorld.CHUNK_DIM && voxelLevel != null; ++index) {
 			for (int level = chunkLevel - 1; level >= 0 && voxelLevel != null; --level) {

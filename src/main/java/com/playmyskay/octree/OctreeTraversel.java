@@ -24,7 +24,7 @@ public class OctreeTraversel {
 			return null;
 		}
 
-		for (int level = octree.treeLevel; level >= node.getLevel(); --level) {
+		for (int level = octree.curLevel; level >= node.getDepth(); --level) {
 			node = next(node, v);
 			if (node == null) {
 				return null;
