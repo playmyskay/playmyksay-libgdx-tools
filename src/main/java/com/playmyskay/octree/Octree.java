@@ -10,6 +10,7 @@ public class Octree<N extends OctreeNode<N, D>, D extends OctreeNodeDescriptor> 
 	public IOctreeNodeProvider<N> nodeProvider;
 	private Vector3[] corners = new Vector3[8];
 	private float[] dst2 = new float[8];
+	private Vector3 tmp = new Vector3();
 
 	public Octree(IOctreeNodeProvider<N> nodeProvider) {
 		this.nodeProvider = nodeProvider;
@@ -27,181 +28,146 @@ public class Octree<N extends OctreeNode<N, D>, D extends OctreeNodeDescriptor> 
 				return null;
 			}
 
-			Vector3 cnt = new Vector3();
 			Vector3 min = new Vector3();
 			Vector3 max = new Vector3();
 			while (!rootNode.boundingBox.contains(v)) {
-				corners[0] = getCorner(0, rootNode.boundingBox);
-				corners[1] = getCorner(1, rootNode.boundingBox);
-				corners[2] = getCorner(2, rootNode.boundingBox);
-				corners[3] = getCorner(3, rootNode.boundingBox);
-				corners[4] = getCorner(4, rootNode.boundingBox);
-				corners[5] = getCorner(5, rootNode.boundingBox);
-				corners[6] = getCorner(6, rootNode.boundingBox);
-				corners[7] = getCorner(7, rootNode.boundingBox);
+				int near = OctreeTools.getNearestIndex(rootNode.boundingBox, v, corners, dst2);
+				int far = 7 - near;
 
-				dst2[0] = corners[0].dst2(v);
-				dst2[1] = corners[1].dst2(v);
-				dst2[2] = corners[2].dst2(v);
-				dst2[3] = corners[3].dst2(v);
-				dst2[4] = corners[4].dst2(v);
-				dst2[5] = corners[5].dst2(v);
-				dst2[6] = corners[6].dst2(v);
-				dst2[7] = corners[7].dst2(v);
-
-				int near = 0;
-				int far = 0;
-				for (int i = 1; i < 8; i++) {
-					if (dst2[i] > dst2[far]) {
-						far = i;
-					} else if (dst2[i] < dst2[near]) {
-						near = i;
-					}
-				}
-
-				rootNode.boundingBox.getCenter(cnt);
+				// min is the farest corner
 				min.set(corners[far]);
-				max.set(corners[near]).scl(2f);
+
+				/* 
+				* Equivalent to tmp.set(corners[near]).sub(corners[far]).scl(2f);
+				* Vector3 t1 = new Vector3().set(corners[near]);
+				* Vector3 t2 = new Vector3().set(corners[far]);
+				* Vector3 t3 = new Vector3().set(t1).sub(t2).scl(2f); 
+				*/
+				tmp.set(corners[near]).sub(corners[far]).scl(2f);
+				max.set(min).add(tmp);
 
 				N newRootNode = nodeProvider.create(curLevel + 1);
 				newRootNode.boundingBox.set(min, max);
 
-				// the new enclosing root node indexing the prior root node 
-				// in the diagonally node/corner instead of its nearest point.
-				// This is due to the fact the world should be expanded 
-				int index = Math.abs(7 - near);
+				// The new enclosing root node sets the current root node as its child.
+				// The index is visually the nearest node of its origin expansion direction.
 				newRootNode.childs = nodeProvider.createArray(curLevel, 8);
-				newRootNode.childs[index] = rootNode;
+				newRootNode.childs[far] = rootNode;
 				rootNode.parent = newRootNode;
-				rootNode.index = (byte) index;
+				rootNode.index = (byte) far;
 				rootNode = newRootNode;
 
 				curLevel++;
 			}
 		}
 
+		N updateNode = processDescriptor(v, descriptor);
+		updateNode(updateNode, descriptor);
+
+		return updateNode;
+	}
+
+	private N addNode (Vector3 v, D descriptor) {
+		OctreeTools.adjustVector(v);
+
+		N lastNode = null;
 		N currentNode = rootNode;
 		BoundingBox boundingBox = new BoundingBox();
-		if (descriptor.type == Type.add) {
-			for (int level = curLevel; level > 0 && currentNode != null; --level) {
-				currentNode = next(v, level, currentNode, descriptor, boundingBox);
-			}
-		} else if (descriptor.type == Type.remove) {
-			N lastNode = rootNode;
-			for (int level = curLevel; level >= 0 && currentNode != null; --level) {
-				lastNode = currentNode;
-				currentNode = next(v, level, currentNode, descriptor, boundingBox);
-			}
+		for (int level = curLevel; level > 0 && currentNode != null; --level) {
+			lastNode = currentNode;
+			currentNode = next(v, currentNode, descriptor, boundingBox);
+			if (currentNode != null) continue;
 
-			if (currentNode == null) {
-				currentNode = lastNode;
-			}
-
-			// clean up
-			if (currentNode != null) {
-				N parentNode = currentNode.parent;
-				for (int i = 0; i < 7; ++i) {
-					if (parentNode.childs[i] == currentNode) {
-						parentNode.childs[i] = null;
-						break;
-					}
-				}
-
-				boolean empty = true;
-				while (parentNode != null && empty) {
-					for (int i = 0; i < 7 && empty; ++i) {
-						if (parentNode.childs[i] != null) {
-							empty = false;
-						}
-					}
-					if (empty) {
-						for (int i = 0; i < 7; ++i) {
-							if (parentNode.childs[i] == currentNode) {
-								parentNode.childs[i] = null;
-								break;
-							}
-						}
-
-						parentNode = parentNode.parent;
-					}
+			for (int index = 0; index < 8; index++) {
+				OctreeTools.calculateBounds(index, lastNode, boundingBox);
+				if (boundingBox.contains(v)) {
+					currentNode = createChild(lastNode, level, index, boundingBox);
 				}
 			}
-		} else {
-			throw new RuntimeException();
 		}
-
-		if (currentNode != null) {
-			N parentNode = currentNode;
-			while (parentNode != null) {
-				parentNode.update(currentNode, descriptor);
-				parentNode = parentNode.parent;
-			}
-		}
-
 		return currentNode;
 	}
 
-	public void setNode (OctreePosition position) {
+	public N removeNode (Vector3 v, D descriptor) {
+		OctreeTools.adjustVector(v);
 
-	}
-
-	public void calculateChildBounds (int index, N parentNode, BoundingBox out) {
-		// calculate bounding box
-		Vector3 corner = getCorner(index, parentNode.boundingBox);
-		Vector3 cnt = parentNode.boundingBox.getCenter(new Vector3());
-		out.set(corner, cnt);
-	}
-
-	public static Vector3 getCorner (int index, BoundingBox boundingBox) {
-		Vector3 corner = new Vector3();
-		switch (index) {
-		case 0:
-			return boundingBox.getCorner000(corner);
-		case 1:
-			return boundingBox.getCorner100(corner);
-		case 2:
-			return boundingBox.getCorner001(corner);
-		case 3:
-			return boundingBox.getCorner110(corner);
-		case 4:
-			return boundingBox.getCorner010(corner);
-		case 5:
-			return boundingBox.getCorner110(corner);
-		case 6:
-			return boundingBox.getCorner011(corner);
-		case 7:
-			return boundingBox.getCorner111(corner);
+		N lastNode = null;
+		N currentNode = rootNode;
+		BoundingBox boundingBox = new BoundingBox();
+		for (int level = curLevel; level > 0 && currentNode != null; --level) {
+			lastNode = currentNode;
+			currentNode = next(v, currentNode, descriptor, boundingBox);
 		}
-		return null;
+
+		if (currentNode == null && lastNode != null) {
+			currentNode = lastNode;
+		}
+
+		lastNode = currentNode;
+
+		while (currentNode != null && currentNode.parent != null) {
+			deleteChild(currentNode);
+			if (currentNode.parent.hasChilds()) break;
+
+			currentNode = currentNode.parent;
+		}
+
+		return lastNode;
 	}
 
-	public N next (Vector3 v, int level, N currentNode, D descriptor, BoundingBox boundingBox) {
+	private N processDescriptor (Vector3 v, D descriptor) {
+		switch (descriptor.type) {
+		case add:
+			return addNode(v, descriptor);
+		case remove:
+			return removeNode(v, descriptor);
+		default:
+			throw new RuntimeException("Unknown Type " + descriptor.type.toString());
+		}
+	}
+
+	public N createChild (N node, int level, int index, BoundingBox boundingBox) {
+		if (node.childs == null || node.childs[index] == null) {
+			if (node.childs == null) {
+				node.childs = nodeProvider.createArray(level - 1, 8);
+			}
+			node.childs[index] = nodeProvider.create(level - 1);
+			node.childs[index].parent = node;
+			node.childs[index].index = (byte) index;
+			node.childs[index].boundingBox.set(boundingBox);
+			node.childs[index].childs = nodeProvider.createArray(level - 1, 8);
+			return node.childs[index];
+		}
+		return node.childs[index];
+	}
+
+	private boolean deleteChild (N node) {
+		if (node.parent == null) return false;
+		N parent = node.parent;
+		for (int i = 0; i < 8; ++i) {
+			if (parent.childs == null) continue;
+			if (parent.childs[i] == null) continue;
+			if (parent.childs[i] != node) continue;
+			parent.childs[i] = null;
+			return true;
+		}
+		return false;
+	}
+
+	private void updateNode (N node, D descriptor) {
+		if (node == null) return;
+		while (node != null) {
+			node.update(node, descriptor);
+			node = node.parent;
+		}
+	}
+
+	public N next (Vector3 v, N currentNode, D descriptor, BoundingBox boundingBox) {
 		for (int index = 0; index < 8; index++) {
-			if (descriptor.type == Type.add) {
-				if (currentNode.childs == null || currentNode.childs[index] == null) {
-					calculateChildBounds(index, currentNode, boundingBox);
-					if (boundingBox.contains(v)) {
-						if ((level - 1) < 0) throw new RuntimeException();
-						if (currentNode.childs == null) {
-							currentNode.childs = nodeProvider.createArray(level - 1, 8);
-						}
-						currentNode.childs[index] = nodeProvider.create(level - 1);
-						currentNode.childs[index].parent = currentNode;
-						currentNode.childs[index].index = (byte) index;
-						currentNode.childs[index].boundingBox.set(boundingBox);
-						currentNode.childs[index].childs = nodeProvider.createArray(level - 1, 8);
-						return currentNode.childs[index];
-					}
-				} else {
-					if (currentNode.childs[index].boundingBox.contains(v)) {
-						return currentNode.childs[index];
-					}
-				}
-			} else if (descriptor.type == Type.remove) {
-				if (currentNode.childs[index] != null) {
-					if (currentNode.childs[index].boundingBox.contains(v)) {
-						return currentNode.childs[index];
-					}
+			if (currentNode.childs == null) continue;
+			if (currentNode.childs[index] != null) {
+				if (currentNode.childs[index].boundingBox.contains(v)) {
+					return currentNode.childs[index];
 				}
 			}
 		}

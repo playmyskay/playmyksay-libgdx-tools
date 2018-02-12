@@ -23,5 +23,13 @@ public abstract class OctreeNode<N extends OctreeNode<N, D>, D extends OctreeNod
 		return depth;
 	}
 
+	public boolean hasChilds () {
+		if (childs == null) return false;
+		for (int i = 0; i < 8; i++) {
+			if (childs[i] != null) return true;
+		}
+		return false;
+	}
+
 	public abstract void update (N node, D descriptor);
 }
