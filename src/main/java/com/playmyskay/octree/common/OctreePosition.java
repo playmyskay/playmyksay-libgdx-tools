@@ -1,4 +1,4 @@
-package com.playmyskay.octree;
+package com.playmyskay.octree.common;
 
 import java.util.ArrayList;
 

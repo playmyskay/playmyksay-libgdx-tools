@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.badlogic.gdx.math.Vector3;
+import com.playmyskay.voxel.common.descriptors.VoxelDescriptor;
 import com.playmyskay.voxel.level.VoxelLevel;
 
 public class VoxelWorld {
@@ -20,7 +21,10 @@ public class VoxelWorld {
 
 	public void setVoxel (Vector3 v, VoxelDescriptor descriptor) {
 		VoxelLevel voxelLevel = voxelOctree.setNode(v, descriptor);
+		updateListeners(voxelLevel);
+	}
 
+	public void updateListeners (VoxelLevel voxelLevel) {
 		if (voxelLevel != null) {
 			for (VoxelUpdateListener updateListener : updateListeners) {
 				updateListener.updateLevel(voxelLevel);

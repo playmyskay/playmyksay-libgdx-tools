@@ -46,7 +46,7 @@ public class VoxelFacePlane implements Disposable {
 
 		Vector3 cnt = new Vector3();
 		for (VoxelLevelEntity entity : getEntities()) {
-			entity.boundingBox.getCenter(cnt);
+			entity.boundingBox().getCenter(cnt);
 			x = cnt.x;
 			y = cnt.y;
 			z = cnt.z;

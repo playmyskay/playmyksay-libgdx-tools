@@ -1,9 +1,9 @@
 package com.playmyskay.voxel.common;
 
 public class VoxelOffset {
-	public int x = 0;
-	public int y = 0;
-	public int z = 0;
+	public float x = 0f;
+	public float y = 0f;
+	public float z = 0f;
 
 	public void set (VoxelOffset voxelOffset) {
 		this.x = voxelOffset.x;
@@ -11,7 +11,7 @@ public class VoxelOffset {
 		this.z = voxelOffset.z;
 	}
 
-	public VoxelOffset set (int offsetX, int offsetY, int offsetZ) {
+	public VoxelOffset set (float offsetX, float offsetY, float offsetZ) {
 		this.x = offsetX;
 		this.y = offsetY;
 		this.z = offsetZ;
@@ -19,8 +19,8 @@ public class VoxelOffset {
 	}
 
 	public void clear () {
-		this.x = 0;
-		this.y = 0;
-		this.z = 0;
+		this.y = 0f;
+		this.x = 0f;
+		this.z = 0f;
 	}
 }

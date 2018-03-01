@@ -1,4 +1,4 @@
-package com.playmyskay.octree;
+package com.playmyskay.octree.common;
 
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.math.collision.BoundingBox;
@@ -62,9 +62,9 @@ public class OctreeTools {
 		return near;
 	}
 
-	public static <N extends OctreeNode<?, ?>> void calculateBounds (int index, N parentNode, BoundingBox out) {
-		Vector3 corner = OctreeTools.getCorner(index, parentNode.boundingBox);
-		Vector3 cnt = parentNode.boundingBox.getCenter(new Vector3());
+	public static <N extends OctreeNode<N>> void calculateBounds (int index, N parentNode, BoundingBox out) {
+		Vector3 corner = OctreeTools.getCorner(index, parentNode.boundingBox());
+		Vector3 cnt = parentNode.boundingBox().getCenter(new Vector3());
 		out.set(corner, cnt);
 	}
 
@@ -78,5 +78,29 @@ public class OctreeTools {
 		if (v.z % 1f == 0f || v.z == 0f) {
 			v.z += 0.5f;
 		}
+	}
+
+	public static <N extends OctreeNode<N>> N contains (Vector3 v, N currentNode) {
+		for (int index = 0; index < 8; index++) {
+			if (currentNode.childs() == null) continue;
+			if (currentNode.child(index) != null) {
+				if (currentNode.child(index).boundingBox().contains(v)) {
+					return currentNode.child(index);
+				}
+			}
+		}
+		return null;
+	}
+
+	public static <N extends OctreeNode<N>> N contains (BoundingBox boundingBox, N currentNode) {
+		for (int index = 0; index < 8; index++) {
+			if (currentNode.childs() == null) continue;
+			if (currentNode.child(index) != null) {
+				if (currentNode.child(index).boundingBox().contains(boundingBox)) {
+					return currentNode.child(index);
+				}
+			}
+		}
+		return null;
 	}
 }

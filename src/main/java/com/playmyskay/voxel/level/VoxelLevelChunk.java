@@ -4,11 +4,12 @@ import java.util.HashSet;
 import java.util.Set;
 
 import com.badlogic.gdx.math.Vector3;
-import com.playmyskay.octree.OctreeTraversel;
+import com.playmyskay.octree.common.OctreeNodeDescriptor;
+import com.playmyskay.octree.common.OctreeTraversal;
 import com.playmyskay.voxel.common.VoxelComposite;
-import com.playmyskay.voxel.common.VoxelDescriptor;
 import com.playmyskay.voxel.common.VoxelPosition;
 import com.playmyskay.voxel.common.VoxelWorld;
+import com.playmyskay.voxel.common.descriptors.VoxelDescriptor;
 import com.playmyskay.voxel.face.VoxelFace;
 import com.playmyskay.voxel.face.VoxelFace.Direction;
 import com.playmyskay.voxel.face.VoxelPlaneTools;
@@ -19,11 +20,11 @@ public class VoxelLevelChunk extends VoxelLevel {
 	public Set<VoxelComposite> voxelCompositeSet = new HashSet<VoxelComposite>();
 
 	@Override
-	public void update (VoxelLevel node, VoxelDescriptor descriptor) {
-		if (node instanceof VoxelLevelEntity) {
-			VoxelComposite voxelComposite = mergeToComposite((VoxelLevelEntity) node, descriptor);
-
-			if (descriptor.updateInstant && voxelComposite != null) {
+	public void update (VoxelLevel node, OctreeNodeDescriptor descriptor) {
+		if (node instanceof VoxelLevelEntity && descriptor instanceof VoxelDescriptor) {
+			VoxelDescriptor voxelDescriptor = (VoxelDescriptor) descriptor;
+			VoxelComposite voxelComposite = mergeToComposite((VoxelLevelEntity) node, voxelDescriptor);
+			if (voxelDescriptor.updateInstant && voxelComposite != null) {
 				determineFaces(voxelComposite, (VoxelLevelEntity) node);
 				VoxelPlaneTools.determineVoxelPlaneFaces(this, voxelComposite);
 			}
@@ -43,10 +44,10 @@ public class VoxelLevelChunk extends VoxelLevel {
 
 	private VoxelComposite checkComposite (VoxelLevelEntity entity, VoxelTypeDescriptor voxelTypeDescriptor,
 			int offsetX, int offsetY, int offsetZ) {
-		Vector3 v = entity.boundingBox.getCenter(new Vector3()).add(offsetX, offsetY, offsetZ);
-		if (!entity.boundingBox.contains(v)) return null;
+		Vector3 v = entity.boundingBox().getCenter(new Vector3()).add(offsetX, offsetY, offsetZ);
+		if (!entity.boundingBox().contains(v)) return null;
 
-		VoxelLevelEntity offsetEntity = (VoxelLevelEntity) OctreeTraversel.get(VoxelWorld.voxelWorld.voxelOctree,
+		VoxelLevelEntity offsetEntity = (VoxelLevelEntity) OctreeTraversal.get(VoxelWorld.voxelWorld.voxelOctree,
 				entity, v);
 
 		VoxelComposite voxelComposite = getVoxelComposite(offsetEntity);
@@ -108,13 +109,13 @@ public class VoxelLevelChunk extends VoxelLevel {
 	private void determineFace (VoxelComposite voxelComposite, Direction direction, VoxelLevelEntity entity,
 			int offsetX, int offsetY, int offsetZ) {
 
-		Vector3 v = entity.boundingBox.getCenter(new Vector3()).add(offsetX, offsetY, offsetZ);
-		if (!entity.boundingBox.contains(v)) {
+		Vector3 v = entity.boundingBox().getCenter(new Vector3()).add(offsetX, offsetY, offsetZ);
+		if (!entity.boundingBox().contains(v)) {
 			entity.addFace(direction);
 			return;
 		}
 
-		VoxelLevelEntity offsetEntity = (VoxelLevelEntity) OctreeTraversel.get(VoxelWorld.voxelWorld.voxelOctree,
+		VoxelLevelEntity offsetEntity = (VoxelLevelEntity) OctreeTraversal.get(VoxelWorld.voxelWorld.voxelOctree,
 				entity, v);
 
 		if (offsetEntity != null && voxelComposite.contains(offsetEntity)) {
