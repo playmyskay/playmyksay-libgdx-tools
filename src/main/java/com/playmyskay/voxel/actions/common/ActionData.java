@@ -6,7 +6,8 @@ import java.util.List;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.math.collision.Ray;
 import com.playmyskay.log.ILogger;
-import com.playmyskay.octree.common.OctreeTraversal.IntersectionData;
+import com.playmyskay.octree.traversal.IntersectionData;
+import com.playmyskay.octree.traversal.OctreeTraversalSettings;
 import com.playmyskay.voxel.common.VoxelOctree;
 import com.playmyskay.voxel.level.VoxelLevel;
 
@@ -16,6 +17,7 @@ public class ActionData {
 	private ILogger logger;
 	private List<VoxelLevel> nodeList;
 	private List<Vector3> pointList;
+	private OctreeTraversalSettings settings;
 	private List<IntersectionData<VoxelLevel>> intersectionDataList;
 
 	public VoxelOctree octree () {
@@ -69,6 +71,11 @@ public class ActionData {
 	public List<IntersectionData<VoxelLevel>> intersectionDataList (boolean create) {
 		if (create) return intersectionDataList();
 		return intersectionDataList;
+	}
+
+	public OctreeTraversalSettings settings () {
+		if (settings == null) settings = new OctreeTraversalSettings();
+		return settings;
 	}
 
 }

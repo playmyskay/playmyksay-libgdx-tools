@@ -1,23 +1,28 @@
 package com.playmyskay.voxel.render;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.Mesh;
 import com.badlogic.gdx.graphics.g3d.Environment;
 import com.badlogic.gdx.graphics.g3d.ModelBatch;
 import com.badlogic.gdx.graphics.g3d.Renderable;
 import com.badlogic.gdx.graphics.g3d.Shader;
-import com.playmyskay.voxel.render.RenderChange.Type;
+import com.playmyskay.voxel.common.VoxelComposite;
+import com.playmyskay.voxel.level.VoxelLevelChunk;
 
 public class ChunkModelBatch extends ModelBatch {
 
 	private Environment environment;
-	private int renderableCount = 0;
 	private boolean renderEnabled = true;
-	private ConcurrentLinkedQueue<RenderChange> renderQueue = new ConcurrentLinkedQueue<RenderChange>();
+	private ConcurrentLinkedQueue<ChunkRenderable> renderQueue = new ConcurrentLinkedQueue<>();
+	private HashMap<VoxelLevelChunk, List<Renderable>> map = new HashMap<>();
 
-	public ConcurrentLinkedQueue<RenderChange> renderQueue () {
+	public ConcurrentLinkedQueue<ChunkRenderable> renderQueue () {
 		return renderQueue;
 	}
 
@@ -29,18 +34,14 @@ public class ChunkModelBatch extends ModelBatch {
 		this.renderEnabled = renderEnabled;
 	}
 
-	public int renderableCount () {
-		return renderableCount;
-	}
-
-	private Renderable createRenderable (RenderableItem item) {
+	private Renderable createRenderable (RenderableData rd, Mesh mesh) {
 		Renderable renderable = new Renderable();
 		renderable.meshPart.set("", null, 0, 0, 0);
-		renderable.userData = item;
-		renderable.material = item.material;
-		renderable.meshPart.mesh = item.mesh;
+		renderable.userData = rd.userData();
+		renderable.material = rd.material();
+		renderable.meshPart.mesh = mesh;
 		renderable.meshPart.offset = 0;
-		renderable.meshPart.size = item.mesh.getNumIndices();
+		renderable.meshPart.size = mesh.getNumIndices();
 		renderable.meshPart.primitiveType = GL20.GL_TRIANGLES;
 		renderable.environment = environment;
 		renderable.shader = shaderProvider.getShader(renderable);
@@ -50,17 +51,53 @@ public class ChunkModelBatch extends ModelBatch {
 	public void render () {
 		if (!renderEnabled) return;
 		while (!renderQueue.isEmpty()) {
-			RenderChange rc = renderQueue.poll();
-			if (rc.type == Type.create) {
-				for (RenderableItem item : rc.renderableItems) {
-					item.renderable = createRenderable(item);
-					renderables.add(item.renderable);
-					renderableCount++;
+			ChunkRenderable cr = renderQueue.poll();
+			while (!cr.updateDataQueue.isEmpty()) {
+				UpdateData ud = cr.updateDataQueue.poll();
+				switch (ud.type) {
+				case addChunk:
+				case addVoxel: {
+					for (RenderableData rd : ud.renderableDatas) {
+						Mesh mesh = Mesher.createMesh(rd);
+						Renderable renderable = createRenderable(rd, mesh);
+						renderables.add(renderable);
+
+						List<Renderable> renderableList = map.get(cr.voxelLevelChunk);
+						if (renderableList == null) {
+							renderableList = new ArrayList<Renderable>();
+							map.put(cr.voxelLevelChunk, renderableList);
+						}
+						renderableList.add(renderable);
+					}
+					break;
 				}
-			} else if (rc.type == Type.remove) {
-				for (RenderableItem item : rc.renderableItems) {
-					renderables.removeValue(item.renderable, true);
-					renderableCount--;
+				case removeChunk: {
+					List<Renderable> renderableList = map.get(cr.voxelLevelChunk);
+					if (renderableList != null) {
+						for (Renderable r : renderableList) {
+							renderables.removeValue(r, true);
+						}
+					}
+					break;
+				}
+				case removeVoxel: {
+					List<Renderable> renderableList = map.get(cr.voxelLevelChunk);
+					if (renderableList != null) {
+						for (Renderable r : renderableList) {
+							if (r.userData instanceof VoxelComposite) {
+								VoxelComposite voxelComposite = (VoxelComposite) r.userData;
+								if (voxelComposite.voxelLevelSet.size() == 0) {
+									renderables.removeValue(r, true);
+									renderableList.remove(r);
+									break;
+								}
+							}
+						}
+					}
+					break;
+				}
+				default:
+					break;
 				}
 			}
 		}

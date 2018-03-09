@@ -1,7 +1,11 @@
 package com.playmyskay.octree.common;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.math.collision.BoundingBox;
+import com.playmyskay.octree.common.IOctreeListener.NodeUpdateData;
 import com.playmyskay.octree.common.OctreeNodeDescriptor.BaseActionType;
 
 public class Octree<N extends OctreeNode<N>, D extends OctreeNodeDescriptor> {
@@ -12,6 +16,7 @@ public class Octree<N extends OctreeNode<N>, D extends OctreeNodeDescriptor> {
 	private Vector3[] corners = new Vector3[8];
 	private float[] dst2 = new float[8];
 	private Vector3 tmp = new Vector3();
+	private List<IOctreeListener<N, D>> octreeListenerList = new ArrayList<>();
 
 	public Octree(IOctreeNodeProvider<N> nodeProvider) {
 		this.nodeProvider = nodeProvider;
@@ -19,6 +24,14 @@ public class Octree<N extends OctreeNode<N>, D extends OctreeNodeDescriptor> {
 		for (int i = 0; i < 8; i++) {
 			corners[i] = new Vector3();
 		}
+	}
+
+	public void addListener (IOctreeListener<N, D> octreeListener) {
+		octreeListenerList.add(octreeListener);
+	}
+
+	public void removeListener (IOctreeListener<N, D> octreeListener) {
+		octreeListenerList.remove(octreeListener);
 	}
 
 	private void createRootNode (Vector3 v) {
@@ -73,7 +86,18 @@ public class Octree<N extends OctreeNode<N>, D extends OctreeNodeDescriptor> {
 		N updateNode = processDescriptor(v, descriptor);
 		updateNode(updateNode, descriptor);
 
+		updateListeners(updateNode, descriptor);
+
 		return updateNode;
+	}
+
+	private void updateListeners (N updateNode, D descriptor) {
+		NodeUpdateData<N, D> updateData = new NodeUpdateData<>();
+		updateData.node = updateNode;
+		updateData.descriptor = descriptor;
+		for (IOctreeListener<N, D> listener : octreeListenerList) {
+			listener.update(updateData);
+		}
 	}
 
 	private N addNode (Vector3 v, D descriptor) {

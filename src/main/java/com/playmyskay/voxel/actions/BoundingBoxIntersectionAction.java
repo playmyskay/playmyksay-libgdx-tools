@@ -4,8 +4,8 @@ import java.util.Arrays;
 import java.util.TreeSet;
 
 import com.badlogic.gdx.math.collision.BoundingBox;
-import com.playmyskay.octree.common.OctreeTraversal;
-import com.playmyskay.octree.common.OctreeTraversal.IntersectionRecorder;
+import com.playmyskay.octree.traversal.IntersectionRecorder;
+import com.playmyskay.octree.traversal.OctreeTraversal;
 import com.playmyskay.voxel.actions.common.Action;
 import com.playmyskay.voxel.actions.common.ActionData;
 import com.playmyskay.voxel.actions.common.ActionResult;
@@ -24,8 +24,12 @@ public class BoundingBoxIntersectionAction extends Action {
 
 	@Override
 	public ActionResult run (ActionData actionData) {
+		actionData.settings().maxLevel = maxLevel;
+		actionData.settings().recordLevelSet.clear();
+		actionData.settings().recordLevelSet.addAll(recordLevelSet);
+
 		IntersectionRecorder<VoxelLevel> ir = OctreeTraversal.getIntersections(actionData.octree(), boundingBox,
-				recordLevelSet.toArray(new Integer[recordLevelSet.size()]), maxLevel);
+				actionData.settings());
 		actionData.intersectionDataList(true).addAll(ir.intersections);
 		return ActionResult.OK;
 	}

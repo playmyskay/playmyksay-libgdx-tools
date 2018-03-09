@@ -3,7 +3,7 @@ package com.playmyskay.voxel.actions;
 import java.util.List;
 
 import com.playmyskay.log.ILogger;
-import com.playmyskay.octree.common.OctreeTraversal.IntersectionData;
+import com.playmyskay.octree.traversal.IntersectionData;
 import com.playmyskay.voxel.actions.common.Action;
 import com.playmyskay.voxel.actions.common.ActionData;
 import com.playmyskay.voxel.actions.common.ActionResult;

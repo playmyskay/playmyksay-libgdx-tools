@@ -16,7 +16,7 @@ public class SetPointNodesAction extends Action {
 	@Override
 	public ActionResult run (ActionData actionData) {
 		for (Vector3 point : actionData.pointList()) {
-			actionData.octree().setNode(point, descriptor);
+			actionData.nodeList().add(actionData.octree().setNode(point, descriptor));
 		}
 		return ActionResult.OK;
 	}

@@ -8,7 +8,7 @@ public class AddVoxelDescriptor extends VoxelDescriptor {
 		return addVoxelDescriptor;
 	}
 
-	private AddVoxelDescriptor() {
+	public AddVoxelDescriptor() {
 		super(BaseActionType.add);
 	}
 

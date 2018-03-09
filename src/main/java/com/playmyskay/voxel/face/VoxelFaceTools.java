@@ -7,11 +7,9 @@ public class VoxelFaceTools {
 
 	final static public int createFaceVertices (VoxelFacePlane plane, float[] vertices, int vertexCount,
 			VoxelOffset voxelOffset) {
-		for (Direction direction : Direction.values()) {
-			if (direction == Direction.none) continue;
-			if (VoxelFace.hasFace(plane.faceBits, direction)) {
-				vertexCount = createFaceVertices(direction, plane, vertices, vertexCount, voxelOffset);
-			}
+		Direction direction = VoxelFace.getDirection(plane.faceBits);
+		if (direction != null) {
+			vertexCount = createFaceVertices(direction, plane, vertices, vertexCount, voxelOffset);
 		}
 		return vertexCount;
 	}

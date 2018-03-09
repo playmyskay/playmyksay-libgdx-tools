@@ -33,6 +33,24 @@ public class VoxelFace {
 		return 0x00;
 	}
 
+	public static Direction getDirection (byte directionBit) {
+		switch (directionBit) {
+		case top_bit:
+			return Direction.top;
+		case bottom_bit:
+			return Direction.bottom;
+		case left_bit:
+			return Direction.left;
+		case right_bit:
+			return Direction.right;
+		case front_bit:
+			return Direction.front;
+		case back_bit:
+			return Direction.back;
+		}
+		return null;
+	}
+
 	public static byte addFace (byte faceBits, Direction direction) {
 		faceBits |= VoxelFace.getDirectionBit(direction);
 		return faceBits;

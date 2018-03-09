@@ -1,7 +1,6 @@
 package com.playmyskay.voxel.level;
 
 import com.playmyskay.octree.common.OctreeNodeDescriptor;
-import com.playmyskay.voxel.common.VoxelWorld;
 import com.playmyskay.voxel.face.VoxelFace;
 import com.playmyskay.voxel.face.VoxelFace.Direction;
 
@@ -12,7 +11,7 @@ public class VoxelLevelEntity extends VoxelLevel {
 
 	@Override
 	public void update (VoxelLevel node, OctreeNodeDescriptor descriptor) {
-		VoxelWorld.voxelWorld.updateListeners(node);
+
 	}
 
 	public void addFace (Direction direction) {

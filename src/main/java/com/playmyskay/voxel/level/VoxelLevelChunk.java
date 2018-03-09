@@ -1,11 +1,13 @@
 package com.playmyskay.voxel.level;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
 import com.badlogic.gdx.math.Vector3;
 import com.playmyskay.octree.common.OctreeNodeDescriptor;
-import com.playmyskay.octree.common.OctreeTraversal;
+import com.playmyskay.octree.common.OctreeNodeDescriptor.BaseActionType;
+import com.playmyskay.octree.traversal.OctreeTraversal;
 import com.playmyskay.voxel.common.VoxelComposite;
 import com.playmyskay.voxel.common.VoxelPosition;
 import com.playmyskay.voxel.common.VoxelWorld;
@@ -16,22 +18,34 @@ import com.playmyskay.voxel.face.VoxelPlaneTools;
 import com.playmyskay.voxel.type.VoxelTypeDescriptor;
 
 public class VoxelLevelChunk extends VoxelLevel {
-
 	public Set<VoxelComposite> voxelCompositeSet = new HashSet<VoxelComposite>();
 
 	@Override
 	public void update (VoxelLevel node, OctreeNodeDescriptor descriptor) {
 		if (node instanceof VoxelLevelEntity && descriptor instanceof VoxelDescriptor) {
 			VoxelDescriptor voxelDescriptor = (VoxelDescriptor) descriptor;
-			VoxelComposite voxelComposite = mergeToComposite((VoxelLevelEntity) node, voxelDescriptor);
-			if (voxelDescriptor.updateInstant && voxelComposite != null) {
-				determineFaces(voxelComposite, (VoxelLevelEntity) node);
-				VoxelPlaneTools.determineVoxelPlaneFaces(this, voxelComposite);
+			VoxelLevelEntity voxelLevelEntity = (VoxelLevelEntity) node;
+			if (voxelDescriptor.getBaseActionType() == BaseActionType.add) {
+				VoxelComposite voxelComposite = new VoxelComposite();
+				voxelComposite.voxelLevelSet.add(voxelLevelEntity);
+				voxelComposite.voxelTypeDescriptor = voxelDescriptor.voxelTypeDescriptor;
+				voxelComposite.planeList
+						.addAll(Arrays.asList(VoxelPlaneTools.determineVoxelPlaneFacesFast(this, voxelLevelEntity)));
+
+				voxelCompositeSet.add(voxelComposite);
+			} else if (voxelDescriptor.getBaseActionType() == BaseActionType.remove) {
+				VoxelComposite voxelComposite = getVoxelComposite(voxelLevelEntity);
+				voxelComposite.voxelLevelSet.remove(voxelLevelEntity);
+				if (voxelComposite.voxelLevelSet.size() == 0) {
+					voxelCompositeSet.remove(voxelComposite);
+				} else {
+					VoxelPlaneTools.determineVoxelPlaneFaces(this, voxelComposite);
+				}
 			}
 		}
 	}
 
-	private VoxelComposite getVoxelComposite (VoxelLevelEntity entity) {
+	public VoxelComposite getVoxelComposite (VoxelLevelEntity entity) {
 		for (VoxelComposite voxelComposite : voxelCompositeSet) {
 			for (VoxelLevel item : voxelComposite.voxelLevelSet) {
 				if (item == entity) {
@@ -42,18 +56,21 @@ public class VoxelLevelChunk extends VoxelLevel {
 		return null;
 	}
 
+	private VoxelLevelEntity getOffsetEntity (VoxelLevelEntity entity, int offsetX, int offsetY, int offsetZ) {
+		Vector3 v = entity.boundingBox().getCenter(new Vector3()).add(offsetX, offsetY, offsetZ);
+		VoxelLevelEntity offsetEntity = (VoxelLevelEntity) OctreeTraversal.get(VoxelWorld.voxelWorld.voxelOctree, v);
+		return offsetEntity;
+	}
+
 	private VoxelComposite checkComposite (VoxelLevelEntity entity, VoxelTypeDescriptor voxelTypeDescriptor,
 			int offsetX, int offsetY, int offsetZ) {
-		Vector3 v = entity.boundingBox().getCenter(new Vector3()).add(offsetX, offsetY, offsetZ);
-		if (!entity.boundingBox().contains(v)) return null;
-
-		VoxelLevelEntity offsetEntity = (VoxelLevelEntity) OctreeTraversal.get(VoxelWorld.voxelWorld.voxelOctree,
-				entity, v);
-
-		VoxelComposite voxelComposite = getVoxelComposite(offsetEntity);
-		if (voxelComposite != null) {
-			if (voxelComposite.voxelTypeDescriptor.equal(voxelTypeDescriptor)) {
-				return voxelComposite;
+		VoxelLevelEntity offsetEntity = getOffsetEntity(entity, offsetX, offsetY, offsetZ);
+		if (offsetEntity != null) {
+			VoxelComposite voxelComposite = getVoxelComposite(offsetEntity);
+			if (voxelComposite != null) {
+				if (voxelComposite.voxelTypeDescriptor.equal(voxelTypeDescriptor)) {
+					return voxelComposite;
+				}
 			}
 		}
 
@@ -108,22 +125,18 @@ public class VoxelLevelChunk extends VoxelLevel {
 
 	private void determineFace (VoxelComposite voxelComposite, Direction direction, VoxelLevelEntity entity,
 			int offsetX, int offsetY, int offsetZ) {
-
-		Vector3 v = entity.boundingBox().getCenter(new Vector3()).add(offsetX, offsetY, offsetZ);
-		if (!entity.boundingBox().contains(v)) {
+		VoxelLevelEntity offsetEntity = getOffsetEntity(entity, offsetX, offsetY, offsetZ);
+		if (offsetEntity == null) {
 			entity.addFace(direction);
-			return;
-		}
-
-		VoxelLevelEntity offsetEntity = (VoxelLevelEntity) OctreeTraversal.get(VoxelWorld.voxelWorld.voxelOctree,
-				entity, v);
-
-		if (offsetEntity != null && voxelComposite.contains(offsetEntity)) {
-			entity.removeFace(direction);
-			offsetEntity.removeFace(VoxelFace.getOpposite(direction));
 		} else {
-			entity.addFace(direction);
+			if (voxelComposite.contains(offsetEntity)) {
+				entity.removeFace(direction);
+				offsetEntity.removeFace(VoxelFace.getOpposite(direction));
+			} else {
+				entity.addFace(direction);
+			}
 		}
+
 	}
 
 	public void updateAll () {
