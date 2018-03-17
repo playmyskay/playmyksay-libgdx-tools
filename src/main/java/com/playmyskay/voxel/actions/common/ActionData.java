@@ -15,6 +15,7 @@ public class ActionData {
 	private VoxelOctree octree;
 	private Ray ray;
 	private ILogger logger;
+	private String identifier = "";
 	private List<VoxelLevel> nodeList;
 	private List<Vector3> pointList;
 	private OctreeTraversalSettings settings;
@@ -53,6 +54,14 @@ public class ActionData {
 		this.logger = logger;
 	}
 
+	public String identifier () {
+		return identifier;
+	}
+
+	public void identifier (String identifier) {
+		this.identifier = identifier;
+	}
+
 	public List<VoxelLevel> nodeList () {
 		if (nodeList == null) nodeList = new ArrayList<>();
 		return nodeList;
@@ -77,5 +86,4 @@ public class ActionData {
 		if (settings == null) settings = new OctreeTraversalSettings();
 		return settings;
 	}
-
 }

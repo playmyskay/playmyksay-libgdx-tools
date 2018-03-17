@@ -17,7 +17,7 @@ public class ChunkManager {
 
 	private BoundingBox boundingBox = new BoundingBox(new Vector3(-100f, -100f, -100f), new Vector3(100f, 100f, 100f));
 	private Set<VoxelLevelChunk> visibleChunkSet = new HashSet<>();
-	private Set<VoxelLevelChunk> newChunkSet = new HashSet<>();
+	private Set<VoxelLevelChunk> curChunkSet = new HashSet<>();
 	private RenderUpdateManager updateManager;
 
 	public ChunkManager(RenderUpdateManager renderableManager) {
@@ -25,7 +25,7 @@ public class ChunkManager {
 	}
 
 	public void updateVisibleChunks () {
-		newChunkSet.clear();
+		curChunkSet.clear();
 
 		int chunkDepth = VoxelWorld.voxelWorld.voxelOctree.nodeProvider.depth(VoxelLevelChunk.class);
 
@@ -38,11 +38,11 @@ public class ChunkManager {
 		if (actionData.intersectionDataList() != null && !actionData.intersectionDataList().isEmpty()) {
 			for (IntersectionData<VoxelLevel> intersectionData : actionData.intersectionDataList()) {
 				if (intersectionData.node == null || !(intersectionData.node instanceof VoxelLevelChunk)) continue;
-				newChunkSet.add((VoxelLevelChunk) intersectionData.node);
+				curChunkSet.add((VoxelLevelChunk) intersectionData.node);
 			}
 		}
 
-		newChunkSet.parallelStream().forEach(chunk -> {
+		curChunkSet.parallelStream().forEach(chunk -> {
 			if (visibleChunkSet.contains(chunk)) return;
 
 			UpdateData updateData = new UpdateData();
@@ -52,9 +52,7 @@ public class ChunkManager {
 		});
 
 		visibleChunkSet.forEach(chunk -> {
-			if (!newChunkSet.contains(chunk)) {
-				visibleChunkSet.remove(chunk);
-
+			if (!curChunkSet.contains(chunk)) {
 				UpdateData updateData = new UpdateData();
 				updateData.type = UpdateType.removeChunk;
 				updateData.voxelLevelChunk = chunk;
@@ -62,6 +60,7 @@ public class ChunkManager {
 			}
 		});
 
-		visibleChunkSet.addAll(newChunkSet);
+		visibleChunkSet.clear();
+		visibleChunkSet.addAll(curChunkSet);
 	}
 }

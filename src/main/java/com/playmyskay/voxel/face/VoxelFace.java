@@ -1,8 +1,11 @@
 package com.playmyskay.voxel.face;
 
+import com.badlogic.gdx.math.Vector3;
+import com.playmyskay.voxel.common.VoxelConstants;
+
 public class VoxelFace {
 	public enum Direction {
-		top, bottom, front, back, left, right, none
+		top, bottom, front, back, left, right, none;
 	}
 
 	public final static byte top_bit = 0x01;
@@ -80,6 +83,26 @@ public class VoxelFace {
 			return Direction.left;
 		case top:
 			return Direction.bottom;
+		default:
+			break;
+		}
+		return null;
+	}
+
+	public static Vector3 getNormal (Direction direction) {
+		switch (direction) {
+		case back:
+			return VoxelConstants.normal_back;
+		case bottom:
+			return VoxelConstants.normal_bottom;
+		case front:
+			return VoxelConstants.normal_front;
+		case left:
+			return VoxelConstants.normal_left;
+		case right:
+			return VoxelConstants.normal_right;
+		case top:
+			return VoxelConstants.normal_top;
 		default:
 			break;
 		}

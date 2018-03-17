@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.VertexAttribute;
 import com.badlogic.gdx.graphics.VertexAttributes;
 import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.ModelCache.TightMeshPool;
+import com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.math.Vector3;
 import com.playmyskay.voxel.common.VoxelComposite;
@@ -13,6 +14,7 @@ import com.playmyskay.voxel.common.VoxelWorld;
 import com.playmyskay.voxel.face.VoxelFacePlane;
 import com.playmyskay.voxel.face.VoxelFaceTools;
 import com.playmyskay.voxel.level.VoxelLevelChunk;
+import com.playmyskay.voxel.type.VoxelType;
 
 public class Mesher {
 	private static TightMeshPool meshPool = new TightMeshPool();
@@ -43,7 +45,7 @@ public class Mesher {
 		// for better understanding: without reducing
 		rd.indexCount(rd.vertexCount() / 6 / 4 * 6);
 
-		rd.material(determineMaterial(voxelComposite));
+		rd.material(determineMaterial(voxelComposite.voxelTypeDescriptor.voxelType));
 	}
 
 	public static void calculateChunkMeshData (VoxelLevelChunk chunk, RenderableData[] renderableDatas) {
@@ -53,16 +55,16 @@ public class Mesher {
 		}
 	}
 
-	private static Color previewColor = new Color(Color.GREEN.r, Color.GREEN.g, Color.GREEN.b, 0.1f);
+	private static Color previewColor = new Color(Color.GREEN.r, Color.GREEN.g, Color.GREEN.b, 0.4f);
 
-	public static Material determineMaterial (VoxelComposite voxelComposite) {
-		switch (voxelComposite.voxelTypeDescriptor.voxelType) {
+	public static Material determineMaterial (VoxelType voxelType) {
+		switch (voxelType) {
 		case viewer:
 			return new Material(ColorAttribute.createDiffuse(Color.RED));
 		case selection:
 			return new Material(ColorAttribute.createDiffuse(Color.GREEN));
 		case preview:
-			return new Material(ColorAttribute.createDiffuse(previewColor));
+			return new Material(ColorAttribute.createDiffuse(previewColor), new BlendingAttribute());
 		case undef:
 		case voxel_static:
 		default:

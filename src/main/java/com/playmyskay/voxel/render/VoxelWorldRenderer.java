@@ -24,6 +24,10 @@ public class VoxelWorldRenderer {
 		chunkModelBatch.environment(environment);
 	}
 
+	public ChunkModelBatch chunkModelBatch () {
+		return chunkModelBatch;
+	}
+
 	public ChunkModelBatch batch () {
 		return chunkModelBatch;
 	}

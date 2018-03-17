@@ -6,10 +6,10 @@ import com.playmyskay.voxel.actions.common.ActionData;
 import com.playmyskay.voxel.actions.common.ActionResult;
 import com.playmyskay.voxel.common.descriptors.VoxelDescriptor;
 
-public class SetPointNodesAction extends Action {
+public class SetNodePointsAction extends Action {
 	private VoxelDescriptor descriptor;
 
-	public SetPointNodesAction(VoxelDescriptor descriptor) {
+	public SetNodePointsAction(VoxelDescriptor descriptor) {
 		this.descriptor = descriptor;
 	}
 

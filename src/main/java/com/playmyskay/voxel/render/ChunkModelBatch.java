@@ -20,7 +20,9 @@ public class ChunkModelBatch extends ModelBatch {
 	private Environment environment;
 	private boolean renderEnabled = true;
 	private ConcurrentLinkedQueue<ChunkRenderable> renderQueue = new ConcurrentLinkedQueue<>();
-	private HashMap<VoxelLevelChunk, List<Renderable>> map = new HashMap<>();
+	private HashMap<VoxelLevelChunk, List<Renderable>> chunkMap = new HashMap<>();
+
+	private int vertexCount = 0;
 
 	public ConcurrentLinkedQueue<ChunkRenderable> renderQueue () {
 		return renderQueue;
@@ -45,7 +47,59 @@ public class ChunkModelBatch extends ModelBatch {
 		renderable.meshPart.primitiveType = GL20.GL_TRIANGLES;
 		renderable.environment = environment;
 		renderable.shader = shaderProvider.getShader(renderable);
+
+		vertexCount += mesh.getNumVertices();
+
 		return renderable;
+	}
+
+	private void add (Renderable renderable) {
+		renderables.add(renderable);
+		vertexCount += renderable.meshPart.mesh.getNumVertices();
+	}
+
+	private void remove (Renderable renderable) {
+		renderables.removeValue(renderable, true);
+		vertexCount -= renderable.meshPart.mesh.getNumVertices();
+	}
+
+	private void removeChunk (VoxelLevelChunk chunk) {
+		List<Renderable> renderableList = chunkMap.get(chunk);
+		if (renderableList != null) {
+			for (Renderable renderable : renderableList) {
+				remove(renderable);
+			}
+		}
+	}
+
+	private void removeVoxel (VoxelLevelChunk chunk) {
+		List<Renderable> renderableList = chunkMap.get(chunk);
+		if (renderableList != null) {
+			for (Renderable renderable : renderableList) {
+				if (renderable.userData instanceof VoxelComposite) {
+					VoxelComposite voxelComposite = (VoxelComposite) renderable.userData;
+					if (voxelComposite.voxelLevelSet.size() == 0) {
+						remove(renderable);
+						break;
+					}
+				}
+			}
+		}
+	}
+
+	private void addMulti (RenderableData[] rds, VoxelLevelChunk chunk) {
+		for (RenderableData rd : rds) {
+			Mesh mesh = Mesher.createMesh(rd);
+			Renderable renderable = createRenderable(rd, mesh);
+			add(renderable);
+
+			List<Renderable> renderableList = chunkMap.get(chunk);
+			if (renderableList == null) {
+				renderableList = new ArrayList<Renderable>();
+				chunkMap.put(chunk, renderableList);
+			}
+			renderableList.add(renderable);
+		}
 	}
 
 	public void render () {
@@ -56,46 +110,15 @@ public class ChunkModelBatch extends ModelBatch {
 				UpdateData ud = cr.updateDataQueue.poll();
 				switch (ud.type) {
 				case addChunk:
-				case addVoxel: {
-					for (RenderableData rd : ud.renderableDatas) {
-						Mesh mesh = Mesher.createMesh(rd);
-						Renderable renderable = createRenderable(rd, mesh);
-						renderables.add(renderable);
-
-						List<Renderable> renderableList = map.get(cr.voxelLevelChunk);
-						if (renderableList == null) {
-							renderableList = new ArrayList<Renderable>();
-							map.put(cr.voxelLevelChunk, renderableList);
-						}
-						renderableList.add(renderable);
-					}
+				case addVoxel:
+					addMulti(ud.renderableDatas, cr.voxelLevelChunk);
 					break;
-				}
-				case removeChunk: {
-					List<Renderable> renderableList = map.get(cr.voxelLevelChunk);
-					if (renderableList != null) {
-						for (Renderable r : renderableList) {
-							renderables.removeValue(r, true);
-						}
-					}
+				case removeChunk:
+					removeChunk(cr.voxelLevelChunk);
 					break;
-				}
-				case removeVoxel: {
-					List<Renderable> renderableList = map.get(cr.voxelLevelChunk);
-					if (renderableList != null) {
-						for (Renderable r : renderableList) {
-							if (r.userData instanceof VoxelComposite) {
-								VoxelComposite voxelComposite = (VoxelComposite) r.userData;
-								if (voxelComposite.voxelLevelSet.size() == 0) {
-									renderables.removeValue(r, true);
-									renderableList.remove(r);
-									break;
-								}
-							}
-						}
-					}
+				case removeVoxel:
+					removeVoxel(cr.voxelLevelChunk);
 					break;
-				}
 				default:
 					break;
 				}
@@ -131,5 +154,17 @@ public class ChunkModelBatch extends ModelBatch {
 		flush();
 		if (ownsRenderContext()) context.end();
 		camera = null;
+	}
+
+	public int renderableCount () {
+		return renderables.size;
+	}
+
+	public int chunkCount () {
+		return chunkMap.size();
+	}
+
+	public int vertexCount () {
+		return vertexCount / 6;
 	}
 }

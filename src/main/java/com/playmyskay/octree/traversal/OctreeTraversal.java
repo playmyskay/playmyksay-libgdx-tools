@@ -121,7 +121,7 @@ public class OctreeTraversal {
 		return getIntersections(octree, boundingBox, settings);
 	}
 
-	public static <N extends OctreeNode<N>> IntersectionData<N> getNearestIntersection (Octree<N, ?> octree, Ray ray,
+	public static <N extends OctreeNode<N>> IntersectionData<N> getClosestIntersection (Octree<N, ?> octree, Ray ray,
 			OctreeTraversalSettings settings) {
 		IntersectionRecorder<N> ir = getIntersections(octree, ray, settings);
 		if (ir != null && !ir.intersections.isEmpty()) {
@@ -145,33 +145,10 @@ public class OctreeTraversal {
 		return null;
 	}
 
-	public static final Vector3[] normals = new Vector3[] { new Vector3(1f, 0f, 0f), new Vector3(-1f, 0f, 0f),
-			new Vector3(0f, 1f, 0f), new Vector3(0f, -1f, 0f), new Vector3(0f, 0f, 1f), new Vector3(0f, 0f, -1f) };
-
 	public static <N extends OctreeNode<N>> IntersectionData<N> getIntersectedNormal (Octree<N, ?> octree, Ray ray,
 			OctreeTraversalSettings settings) {
-		IntersectionData<N> entry = OctreeTraversal.getNearestIntersection(octree, ray, settings);
+		IntersectionData<N> entry = OctreeTraversal.getClosestIntersection(octree, ray, settings);
 		if (entry == null) return null;
-
-		BoundingBox boundindBox = entry.node.boundingBox();
-		Vector3 cnt = boundindBox.getCenter(new Vector3());
-
-		// Build direction vector via difference
-		Vector3 direction = new Vector3().set(entry.point).sub(cnt);
-
-		// find the intersected face of the bounding box
-		int bestIndex = -1;
-		float bestDot = 0f;
-		for (int index = 0; index < normals.length; ++index) {
-			Vector3 normal = normals[index];
-			float dot = direction.dot(normal);
-			if (dot >= 0 && dot > bestDot) {
-				bestDot = dot;
-				bestIndex = index;
-			}
-		}
-
-		entry.normal = normals[bestIndex];
 		return entry;
 	}
 
