@@ -2,18 +2,21 @@ package com.playmyskay.voxel.render;
 
 import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.g3d.Environment;
+import com.playmyskay.voxel.world.VoxelWorld;
 
 public class VoxelWorldRenderer {
 	private float updateRenderablesTime = 0f;
 	private ChunkModelBatch chunkModelBatch = new ChunkModelBatch();
 	private RenderUpdateManager renderUpdateManager = new RenderUpdateManager(new RenderableUpdater(chunkModelBatch));
-	private ChunkManager chunkManager = new ChunkManager(renderUpdateManager);
+	private ChunkManager chunkManager;
 	@SuppressWarnings("unused")
-	private WorldUpdateListener worldUpdateListener = new WorldUpdateListener(renderUpdateManager);
+	private WorldUpdateListener worldUpdateListener;
 	private Camera camera;
 
-	public VoxelWorldRenderer() {
+	public VoxelWorldRenderer(VoxelWorld voxelWorld) {
+		voxelWorld.voxelOctree.addListener(new WorldUpdateListener(renderUpdateManager));
 
+		this.chunkManager = new ChunkManager(voxelWorld, renderUpdateManager);
 	}
 
 	public void camera (Camera camera) {

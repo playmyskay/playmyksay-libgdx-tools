@@ -8,13 +8,14 @@ import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.ModelCache.TightMeshPool;
 import com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector3;
 import com.playmyskay.voxel.common.VoxelComposite;
-import com.playmyskay.voxel.common.VoxelWorld;
 import com.playmyskay.voxel.face.VoxelFacePlane;
 import com.playmyskay.voxel.face.VoxelFaceTools;
 import com.playmyskay.voxel.level.VoxelLevelChunk;
 import com.playmyskay.voxel.type.VoxelType;
+import com.playmyskay.voxel.world.VoxelWorld;
 
 public class Mesher {
 	private static TightMeshPool meshPool = new TightMeshPool();
@@ -68,9 +69,9 @@ public class Mesher {
 		case undef:
 		case voxel_static:
 		default:
-//					renderable.material = new Material(ColorAttribute.createDiffuse(new Color(MathUtils.random(0.2f, 1.0f),
-//							MathUtils.random(0.2f, 1.0f), MathUtils.random(0.2f, 1.0f), 1f)));
-			return new Material(ColorAttribute.createDiffuse(Color.WHITE));
+			return new Material(ColorAttribute.createDiffuse(new Color(MathUtils.random(0.2f, 1.0f),
+					MathUtils.random(0.2f, 1.0f), MathUtils.random(0.2f, 1.0f), 1f)));
+//			return new Material(ColorAttribute.createDiffuse(Color.WHITE));
 		}
 	}
 

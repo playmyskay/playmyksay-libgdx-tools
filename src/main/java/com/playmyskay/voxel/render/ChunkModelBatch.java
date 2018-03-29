@@ -90,6 +90,7 @@ public class ChunkModelBatch extends ModelBatch {
 	private void addMulti (RenderableData[] rds, VoxelLevelChunk chunk) {
 		for (RenderableData rd : rds) {
 			Mesh mesh = Mesher.createMesh(rd);
+			if (mesh == null) continue;
 			Renderable renderable = createRenderable(rd, mesh);
 			add(renderable);
 

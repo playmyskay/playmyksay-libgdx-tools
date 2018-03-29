@@ -30,7 +30,9 @@ public class BoundingBoxIntersectionAction extends Action {
 
 		IntersectionRecorder<VoxelLevel> ir = OctreeTraversal.getIntersections(actionData.octree(), boundingBox,
 				actionData.settings());
-		actionData.intersectionDataList(true).addAll(ir.intersections);
+		if (ir != null) {
+			actionData.intersectionDataList(true).addAll(ir.intersections);
+		}
 		return ActionResult.OK;
 	}
 

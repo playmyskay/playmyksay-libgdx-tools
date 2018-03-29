@@ -7,11 +7,16 @@ import com.playmyskay.voxel.level.VoxelLevelEntity;
 import com.playmyskay.voxel.level.VoxelLevelSpace;
 
 public class VoxelNodeProvider implements IOctreeNodeProvider<VoxelLevel> {
+	private VoxelOctree voxelOctree;
+
+	public VoxelNodeProvider(VoxelOctree voxelOctree) {
+		this.voxelOctree = voxelOctree;
+	}
 
 	@Override
 	public VoxelLevel create (int level) {
 		if (level == 0) return new VoxelLevelEntity();
-		if (level == 4) return new VoxelLevelChunk();
+		if (level == 4) return new VoxelLevelChunk(voxelOctree);
 		return new VoxelLevelSpace();
 	}
 

@@ -22,6 +22,7 @@ public class CameraController extends InputAdapter {
 	private float velocity = 5f;
 	private float degreesPerPixel = 0.5f;
 	private final Vector3 tmp = new Vector3();
+	private boolean movingFlag = false;
 
 	private boolean draggedRotation = true;
 
@@ -93,32 +94,40 @@ public class CameraController extends InputAdapter {
 	public void update (float deltaTime) {
 		float velocityTmp = velocity;
 
+		movingFlag = false;
+
 		if (keys.containsKey(TWICE_VELOCITY)) {
 			velocityTmp *= 2;
 		}
 		if (keys.containsKey(FORWARD)) {
 			tmp.set(camera.direction).nor().scl(deltaTime * velocityTmp);
 			camera.position.add(tmp);
+			movingFlag = true;
 		}
 		if (keys.containsKey(BACKWARD)) {
 			tmp.set(camera.direction).nor().scl(-deltaTime * velocityTmp);
 			camera.position.add(tmp);
+			movingFlag = true;
 		}
 		if (keys.containsKey(STRAFE_LEFT)) {
 			tmp.set(camera.direction).crs(camera.up).nor().scl(-deltaTime * velocityTmp);
 			camera.position.add(tmp);
+			movingFlag = true;
 		}
 		if (keys.containsKey(STRAFE_RIGHT)) {
 			tmp.set(camera.direction).crs(camera.up).nor().scl(deltaTime * velocityTmp);
 			camera.position.add(tmp);
+			movingFlag = true;
 		}
 		if (keys.containsKey(UP)) {
 			tmp.set(camera.up).nor().scl(deltaTime * velocityTmp);
 			camera.position.add(tmp);
+			movingFlag = true;
 		}
 		if (keys.containsKey(DOWN)) {
 			tmp.set(camera.up).nor().scl(-deltaTime * velocityTmp);
 			camera.position.add(tmp);
+			movingFlag = true;
 		}
 		camera.update(true);
 	}
@@ -129,5 +138,9 @@ public class CameraController extends InputAdapter {
 
 	public boolean getDraggedRotation () {
 		return this.draggedRotation;
+	}
+
+	public boolean isMoving () {
+		return movingFlag;
 	}
 }

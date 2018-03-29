@@ -1,7 +1,6 @@
 package com.playmyskay.voxel.render;
 
 import com.playmyskay.voxel.common.VoxelOctreeListener;
-import com.playmyskay.voxel.common.VoxelWorld;
 import com.playmyskay.voxel.common.descriptors.VoxelDescriptor;
 import com.playmyskay.voxel.level.VoxelLevel;
 import com.playmyskay.voxel.level.VoxelLevelChunk;
@@ -14,8 +13,6 @@ public class WorldUpdateListener extends VoxelOctreeListener {
 
 	public WorldUpdateListener(RenderUpdateManager renderableManager) {
 		this.renderableManager = renderableManager;
-
-		VoxelWorld.voxelWorld.voxelOctree.addListener(this);
 	}
 
 	@Override

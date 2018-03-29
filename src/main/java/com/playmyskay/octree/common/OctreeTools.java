@@ -80,7 +80,7 @@ public class OctreeTools {
 		}
 	}
 
-	public static <N extends OctreeNode<N>> N contains (Vector3 v, N currentNode) {
+	public static <N extends OctreeNode<N>> N contains (N currentNode, Vector3 v) {
 		for (int index = 0; index < 8; index++) {
 			if (currentNode.childs() == null) continue;
 			if (currentNode.child(index) != null) {
@@ -92,7 +92,7 @@ public class OctreeTools {
 		return null;
 	}
 
-	public static <N extends OctreeNode<N>> N contains (BoundingBox boundingBox, N currentNode) {
+	public static <N extends OctreeNode<N>> N contains (N currentNode, BoundingBox boundingBox) {
 		for (int index = 0; index < 8; index++) {
 			if (currentNode.childs() == null) continue;
 			if (currentNode.child(index) != null) {
@@ -102,5 +102,42 @@ public class OctreeTools {
 			}
 		}
 		return null;
+	}
+
+	public static <N extends OctreeNode<N>> N createChild (IOctreeNodeProvider<N> nodeProvider, N node, int level,
+			int index, BoundingBox boundingBox) {
+		if (node.childs() == null || node.child(index) == null) {
+			if (node.childs() == null) {
+				node.childs(nodeProvider.createArray(level - 1, 8));
+			}
+			node.child(index, nodeProvider.create(level - 1));
+			node.child(index).parent(node);
+			node.child(index).boundingBox().set(boundingBox);
+			node.child(index).childs(nodeProvider.createArray(level - 1, 8));
+			return node.child(index);
+		}
+		return node.child(index);
+	}
+
+	public static <N extends OctreeNode<N>> boolean deleteChild (N node) {
+		if (node.parent() == null) return false;
+		N parent = node.parent();
+		for (int i = 0; i < 8; ++i) {
+			if (parent.childs() == null) continue;
+			if (parent.child(i) == null) continue;
+			if (parent.child(i) != node) continue;
+			parent.child(i, null);
+			return true;
+		}
+		return false;
+	}
+
+	public static <N extends OctreeNode<N>> void updateNode (N updateNode, OctreeNodeDescriptor descriptor) {
+		if (updateNode == null) return;
+		N node = updateNode;
+		while (node != null) {
+			node.update(updateNode, descriptor);
+			node = node.parent();
+		}
 	}
 }

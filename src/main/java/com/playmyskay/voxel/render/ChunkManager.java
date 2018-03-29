@@ -9,9 +9,9 @@ import com.playmyskay.octree.traversal.IntersectionData;
 import com.playmyskay.voxel.actions.BoundingBoxIntersectionAction;
 import com.playmyskay.voxel.actions.RunnerAction;
 import com.playmyskay.voxel.actions.common.ActionData;
-import com.playmyskay.voxel.common.VoxelWorld;
 import com.playmyskay.voxel.level.VoxelLevel;
 import com.playmyskay.voxel.level.VoxelLevelChunk;
+import com.playmyskay.voxel.world.VoxelWorld;
 
 public class ChunkManager {
 
@@ -19,21 +19,23 @@ public class ChunkManager {
 	private Set<VoxelLevelChunk> visibleChunkSet = new HashSet<>();
 	private Set<VoxelLevelChunk> curChunkSet = new HashSet<>();
 	private RenderUpdateManager updateManager;
+	private VoxelWorld voxelWorld;
 
-	public ChunkManager(RenderUpdateManager renderableManager) {
+	public ChunkManager(VoxelWorld voxelWorld, RenderUpdateManager renderableManager) {
+		this.voxelWorld = voxelWorld;
 		this.updateManager = renderableManager;
 	}
 
 	public void updateVisibleChunks () {
 		curChunkSet.clear();
 
-		int chunkDepth = VoxelWorld.voxelWorld.voxelOctree.nodeProvider.depth(VoxelLevelChunk.class);
+		int chunkDepth = voxelWorld.voxelOctree.nodeProvider.depth(VoxelLevelChunk.class);
 
 		RunnerAction runner = new RunnerAction();
 		runner.add(new BoundingBoxIntersectionAction(new Integer[] { chunkDepth }, boundingBox, chunkDepth));
 
 		ActionData actionData = new ActionData();
-		actionData.octree(VoxelWorld.voxelWorld.voxelOctree);
+		actionData.octree(voxelWorld.voxelOctree);
 		runner.run(actionData);
 		if (actionData.intersectionDataList() != null && !actionData.intersectionDataList().isEmpty()) {
 			for (IntersectionData<VoxelLevel> intersectionData : actionData.intersectionDataList()) {
@@ -42,8 +44,10 @@ public class ChunkManager {
 			}
 		}
 
-		curChunkSet.parallelStream().forEach(chunk -> {
+		curChunkSet.forEach(chunk -> {
 			if (visibleChunkSet.contains(chunk)) return;
+
+			chunk.rebuild();
 
 			UpdateData updateData = new UpdateData();
 			updateData.type = UpdateType.addChunk;
@@ -51,7 +55,7 @@ public class ChunkManager {
 			updateManager.add(updateData);
 		});
 
-		visibleChunkSet.forEach(chunk -> {
+		visibleChunkSet.parallelStream().forEach(chunk -> {
 			if (!curChunkSet.contains(chunk)) {
 				UpdateData updateData = new UpdateData();
 				updateData.type = UpdateType.removeChunk;

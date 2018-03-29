@@ -1,6 +1,7 @@
 package com.playmyskay.voxel.level;
 
 import com.playmyskay.octree.common.OctreeNodeDescriptor;
+import com.playmyskay.voxel.common.VoxelComposite;
 import com.playmyskay.voxel.face.VoxelFace;
 import com.playmyskay.voxel.face.VoxelFace.Direction;
 
@@ -8,6 +9,7 @@ public class VoxelLevelEntity extends VoxelLevel {
 
 	public byte faceBits = 0x00;
 	public byte connectionBits = 0x00;
+	public VoxelComposite voxelComposite;
 
 	@Override
 	public void update (VoxelLevel node, OctreeNodeDescriptor descriptor) {

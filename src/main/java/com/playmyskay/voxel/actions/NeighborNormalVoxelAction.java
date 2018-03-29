@@ -13,9 +13,9 @@ import com.playmyskay.voxel.level.VoxelLevel;
  * This action determines the intersected voxel(s) which are hit by the given ray.
  */
 
-public class NeighborNormalPointAction extends Action {
+public class NeighborNormalVoxelAction extends Action {
 
-	public NeighborNormalPointAction() {
+	public NeighborNormalVoxelAction() {
 	}
 
 	public static Vector3 calculateNormal (IntersectionData<VoxelLevel> entry) {

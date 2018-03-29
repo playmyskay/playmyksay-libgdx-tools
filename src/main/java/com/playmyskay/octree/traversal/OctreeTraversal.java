@@ -47,10 +47,10 @@ public class OctreeTraversal {
 					Vector3 point = new Vector3();
 					if (Intersector.intersectRayBounds(ray, node.child(i).boundingBox(), point)) {
 						if (!ir.settings().filter(node.child(i))) {
-							IntersectionData<N> entry = new IntersectionData<>();
-							entry.node = node.child(i);
-							entry.point = point;
-							ir.intersections.add(entry);
+							IntersectionData<N> id = new IntersectionData<>();
+							id.node = node.child(i);
+							id.point = point;
+							ir.intersections.add(id);
 						}
 					}
 				} else {
@@ -83,6 +83,7 @@ public class OctreeTraversal {
 
 	public static <N extends OctreeNode<N>> IntersectionRecorder<N> getIntersections (Octree<N, ?> octree, Ray ray,
 			OctreeTraversalSettings settings) {
+		if (octree == null || octree.rootNode == null) return null;
 		if (!Intersector.intersectRayBoundsFast(ray, octree.rootNode.boundingBox())) {
 			return null;
 		}
@@ -102,6 +103,7 @@ public class OctreeTraversal {
 
 	public static <N extends OctreeNode<N>> IntersectionRecorder<N> getIntersections (Octree<N, ?> octree,
 			BoundingBox boundingBox, OctreeTraversalSettings settings) {
+		if (octree == null || octree.rootNode == null) return null;
 		if (!boundingBox.intersects(octree.rootNode.boundingBox())
 				&& !boundingBox.contains(octree.rootNode.boundingBox())) {
 			return null;

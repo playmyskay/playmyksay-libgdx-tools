@@ -6,6 +6,7 @@ import com.playmyskay.voxel.type.VoxelTypeDescriptor;
 public class VoxelDescriptor extends OctreeNodeDescriptor {
 	public VoxelTypeDescriptor voxelTypeDescriptor = new VoxelTypeDescriptor();
 	public boolean updateInstant = true;
+	public boolean collectFlag = false;
 
 	public VoxelDescriptor(BaseActionType baseActionType) {
 		super(baseActionType);
