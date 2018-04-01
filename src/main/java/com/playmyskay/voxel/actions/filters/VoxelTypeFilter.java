@@ -3,26 +3,25 @@ package com.playmyskay.voxel.actions.filters;
 import java.util.HashSet;
 import java.util.Set;
 
-import com.playmyskay.voxel.common.VoxelComposite;
 import com.playmyskay.voxel.level.VoxelLevel;
 import com.playmyskay.voxel.level.VoxelLevelChunk;
 import com.playmyskay.voxel.level.VoxelLevelEntity;
 import com.playmyskay.voxel.level.VoxelLevelTools;
-import com.playmyskay.voxel.type.VoxelType;
+import com.playmyskay.voxel.type.VoxelUsageType;
 
 public class VoxelTypeFilter extends VoxelLevelFilter {
 
-	private Set<VoxelType> voxelTypeSet = new HashSet<>();
+	private Set<VoxelUsageType> voxelTypeSet = new HashSet<>();
 
 	public VoxelTypeFilter() {
 
 	}
 
-	public VoxelTypeFilter(VoxelType voxelType) {
+	public VoxelTypeFilter(VoxelUsageType voxelType) {
 		add(voxelType);
 	}
 
-	public void add (VoxelType voxelType) {
+	public void add (VoxelUsageType voxelType) {
 		voxelTypeSet.add(voxelType);
 	}
 
@@ -31,17 +30,13 @@ public class VoxelTypeFilter extends VoxelLevelFilter {
 		if (voxelLevel instanceof VoxelLevelEntity) {
 			VoxelLevelChunk chunk = VoxelLevelTools.getChunkLevel(voxelLevel);
 			if (chunk != null) {
-				VoxelComposite voxelComposite = chunk.getVoxelComposite((VoxelLevelEntity) voxelLevel);
-				if (voxelComposite != null) {
-					for (VoxelType voxelType : voxelTypeSet) {
-						if (voxelComposite.voxelTypeDescriptor.voxelType == voxelType) {
-							return true;
-						}
+				for (VoxelUsageType voxelType : voxelTypeSet) {
+					if (((VoxelLevelEntity) voxelLevel).descriptor.voxelType == voxelType) {
+						return true;
 					}
 				}
 			}
 		}
 		return false;
 	}
-
 }

@@ -48,6 +48,9 @@ public class Octree<N extends OctreeNode<N>, D extends OctreeNodeDescriptor> {
 		return !rootNode.boundingBox().contains(v);
 	}
 
+	private Vector3 min = new Vector3();
+	private Vector3 max = new Vector3();
+
 	private boolean expandRootNode (Vector3 v, D descriptor) {
 		if (descriptor.getBaseActionType() == BaseActionType.remove) {
 			return false;
@@ -61,8 +64,6 @@ public class Octree<N extends OctreeNode<N>, D extends OctreeNodeDescriptor> {
 			return true;
 		}
 
-		Vector3 min = new Vector3();
-		Vector3 max = new Vector3();
 		while (needRootExpansion(v)) {
 			int near = OctreeTools.getNearestIndex(rootNode.boundingBox(), v, corners, dst2);
 			int far = 7 - near;
@@ -95,6 +96,8 @@ public class Octree<N extends OctreeNode<N>, D extends OctreeNodeDescriptor> {
 	}
 
 	public N setNode (Vector3 v, D descriptor) {
+		OctreeTools.adjustVector(v);
+
 		if (!expandRootNode(v, descriptor)) {
 			return null;
 		}
@@ -119,7 +122,7 @@ public class Octree<N extends OctreeNode<N>, D extends OctreeNodeDescriptor> {
 	private N processDescriptor (Vector3 v, D descriptor) {
 		switch (descriptor.getBaseActionType()) {
 		case add:
-			return addNode(v, descriptor);
+			return OctreeNodeTools.addNode(nodeProvider, rootNode, v, descriptor, tmpBoundingBox);
 		case remove:
 			return removeNode(v, descriptor);
 		default:
@@ -127,47 +130,40 @@ public class Octree<N extends OctreeNode<N>, D extends OctreeNodeDescriptor> {
 		}
 	}
 
-	private N addNode (Vector3 v, D descriptor) {
-		OctreeTools.adjustVector(v);
+	private BoundingBox tmpBoundingBox = new BoundingBox();
 
-		N parentNode = null;
-		N childNode = rootNode;
-		BoundingBox boundingBox = new BoundingBox();
-		for (int level = curLevel; level > 0 && childNode != null; --level) {
-			parentNode = childNode;
-			childNode = OctreeTools.contains(childNode, v);
-			if (childNode != null) continue;
-
-			for (int index = 0; index < 8; index++) {
-				OctreeTools.calculateBounds(index, parentNode, boundingBox);
-				if (boundingBox.contains(v)) {
-					childNode = OctreeTools.createChild(nodeProvider, parentNode, level, index, boundingBox);
-				}
-			}
-		}
-		return childNode;
-	}
-
-	private N addNode (N node, D descriptor) {
+	public N addNode (N node, D descriptor) {
 		BoundingBox boundingBox = new BoundingBox();
 		boundingBox.set(node.boundingBox());
+		if (descriptor.getBaseActionType() == BaseActionType.add) {
+			Vector3 corner = new Vector3();
+			expandRootNode(boundingBox.getCorner000(corner), descriptor);
+			expandRootNode(boundingBox.getCorner100(corner), descriptor);
+			expandRootNode(boundingBox.getCorner001(corner), descriptor);
+			expandRootNode(boundingBox.getCorner101(corner), descriptor);
+			expandRootNode(boundingBox.getCorner010(corner), descriptor);
+			expandRootNode(boundingBox.getCorner110(corner), descriptor);
+			expandRootNode(boundingBox.getCorner011(corner), descriptor);
+			expandRootNode(boundingBox.getCorner111(corner), descriptor);
 
-		N parentNode = null;
-		N childNode = rootNode;
-		for (int level = curLevel; level > 0 && childNode != null; --level) {
-			parentNode = childNode;
-			childNode = OctreeTools.contains(childNode, node.boundingBox());
-			if (childNode != null) continue;
+			N parentNode = null;
+			N childNode = rootNode;
+			for (int level = curLevel; level > 0 && childNode != null; --level) {
+				parentNode = childNode;
+				childNode = OctreeTools.contains(childNode, node.boundingBox());
+				if (childNode != null) continue;
 
-			for (int index = 0; index < 8; index++) {
-				OctreeTools.calculateBounds(index, parentNode, boundingBox);
-				if (boundingBox.contains(node.boundingBox())) {
-					node.parent(parentNode);
-					parentNode.child(index, node);
-					return node;
+				for (int index = 0; index < 8; index++) {
+					OctreeTools.calculateBounds(index, parentNode, boundingBox);
+					if (boundingBox.contains(node.boundingBox())) {
+						node.parent(parentNode);
+						parentNode.child(index, node);
+						return node;
+					}
 				}
 			}
 		}
+
 		return null;
 	}
 

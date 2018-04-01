@@ -2,7 +2,6 @@ package com.playmyskay.voxel.render;
 
 import java.util.HashMap;
 
-import com.playmyskay.voxel.common.VoxelComposite;
 import com.playmyskay.voxel.level.VoxelLevelChunk;
 
 public class RenderUpdateManager {
@@ -37,23 +36,20 @@ public class RenderUpdateManager {
 	private void addChunk (UpdateData ud) {
 		ChunkRenderable chunkRenderable = map.get(ud.voxelLevelChunk);
 		if (chunkRenderable != null) {
-			if (ud.voxelLevelChunk.voxelCompositeSet.size() == 0) {
+			if (ud.voxelLevelChunk.planeList.size == 0) {
 				removeChunk(ud);
 			}
 		} else {
-			if (ud.voxelLevelChunk.voxelCompositeSet.size() > 0) {
+			if (ud.voxelLevelChunk.planeList.size > 0) {
 				chunkRenderable = new ChunkRenderable();
 				chunkRenderable.voxelLevelChunk = ud.voxelLevelChunk;
 				chunkRenderable.updateDataQueue.add(ud);
 				map.put(ud.voxelLevelChunk, chunkRenderable);
 
-				ud.renderableDatas = new RenderableData[ud.voxelLevelChunk.voxelCompositeSet.size()];
-				for (int i = 0; i < ud.voxelLevelChunk.voxelCompositeSet.size(); ++i) {
-					ud.renderableDatas[i] = new RenderableData();
-				}
+				ud.renderableData = new RenderableData();
 
 				// calculate the whole chunk mesh data to prepare the final mesh instance
-				Mesher.calculateChunkMeshData(chunkRenderable.voxelLevelChunk, ud.renderableDatas);
+				ChunkMesher.calculateChunkMeshData(chunkRenderable.voxelLevelChunk, ud.renderableData);
 
 				renderableHandler.update(chunkRenderable);
 			}
@@ -73,37 +69,34 @@ public class RenderUpdateManager {
 	private void addVoxel (UpdateData ud) {
 		ChunkRenderable chunkRenderable = map.get(ud.voxelLevelChunk);
 		if (chunkRenderable != null) {
-			ud.renderableDatas = new RenderableData[1];
-			ud.renderableDatas[0] = new RenderableData();
+			ud.renderableData = new RenderableData();
+			ud.renderableData.userData(ud.voxelLevelEntity);
+//			Mesher.calculatePlaneMeshData(chunkRenderable.voxelLevelChunk, ud.renderableDatas[0]);
 
-			VoxelComposite voxelComposite = chunkRenderable.voxelLevelChunk.getVoxelComposite(ud.voxelLevelEntity);
-			ud.renderableDatas[0].userData(voxelComposite);
-			Mesher.calculateCompositeMeshData(chunkRenderable.voxelLevelChunk, voxelComposite, ud.renderableDatas[0]);
-
-			chunkRenderable.updateDataQueue.add(ud);
-			renderableHandler.update(chunkRenderable);
+//			chunkRenderable.updateDataQueue.add(ud);
+//			renderableHandler.update(chunkRenderable);
 		}
 	}
 
 	private void removeVoxel (UpdateData ud) {
 		ChunkRenderable chunkRenderable = map.get(ud.voxelLevelChunk);
 		if (chunkRenderable != null) {
-			VoxelComposite voxelComposite = chunkRenderable.voxelLevelChunk.getVoxelComposite(ud.voxelLevelEntity);
-
-			ud.renderableDatas = new RenderableData[1];
-			ud.renderableDatas[0] = new RenderableData();
-
-			if (voxelComposite != null) {
-				// update VoxelComposite
-				ud.renderableDatas[0].userData(voxelComposite);
-				Mesher.calculateCompositeMeshData(chunkRenderable.voxelLevelChunk, voxelComposite,
-						ud.renderableDatas[0]);
-			} else {
-				ud.renderableDatas[0].userData(ud.voxelLevelEntity);
-			}
-
-			chunkRenderable.updateDataQueue.add(ud);
-			renderableHandler.update(chunkRenderable);
+//			VoxelComposite voxelComposite = chunkRenderable.voxelLevelChunk.getVoxelComposite(ud.voxelLevelEntity);
+//
+//			ud.renderableDatas = new RenderableData[1];
+//			ud.renderableDatas[0] = new RenderableData();
+//
+//			if (voxelComposite != null) {
+//				// update VoxelComposite
+//				ud.renderableDatas[0].userData(voxelComposite);
+//				Mesher.calculateCompositeMeshData(chunkRenderable.voxelLevelChunk, voxelComposite,
+//						ud.renderableDatas[0]);
+//			} else {
+//				ud.renderableDatas[0].userData(ud.voxelLevelEntity);
+//			}
+//
+//			chunkRenderable.updateDataQueue.add(ud);
+//			renderableHandler.update(chunkRenderable);
 		}
 	}
 }

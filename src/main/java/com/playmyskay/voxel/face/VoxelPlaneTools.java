@@ -3,11 +3,9 @@ package com.playmyskay.voxel.face;
 import java.io.IOException;
 import java.util.EnumSet;
 import java.util.Iterator;
-import java.util.List;
 
 import com.badlogic.gdx.math.Vector3;
-import com.playmyskay.log.Logger;
-import com.playmyskay.voxel.common.VoxelComposite;
+import com.badlogic.gdx.utils.Array;
 import com.playmyskay.voxel.common.VoxelOctree;
 import com.playmyskay.voxel.face.VoxelFace.Direction;
 import com.playmyskay.voxel.level.VoxelLevel;
@@ -17,10 +15,23 @@ import com.playmyskay.voxel.world.VoxelWorld;
 
 public class VoxelPlaneTools {
 
-	private static boolean mergeHorizontal (List<VoxelFacePlane> planeList) {
-		for (VoxelFacePlane plane1 : planeList) {
-			for (VoxelFacePlane plane2 : planeList) {
-				if (plane1.disposed || plane2.disposed) continue;
+	private static void removeDisposed (Array<VoxelFacePlane> planeList) {
+		Iterator<VoxelFacePlane> iterator = planeList.iterator();
+		while (iterator.hasNext()) {
+			VoxelFacePlane plane = iterator.next();
+			if (plane.isDisposed()) {
+				iterator.remove();
+			}
+		}
+		planeList.shrink();
+	}
+
+	private static boolean mergeHorizontal (Array<VoxelFacePlane> planeList) {
+		boolean ret = false;
+		for (VoxelFacePlane plane1 : planeList.items) {
+			for (VoxelFacePlane plane2 : planeList.items) {
+				if (plane1 == null || plane2 == null) continue;
+				if (plane1.isDisposed() || plane2.isDisposed()) continue;
 				if (plane1 == plane2) continue;
 				if (plane1.faceBits != plane2.faceBits) continue;
 				if (plane1.y1 == plane2.y1 && plane1.y2 == plane2.y2) {
@@ -28,58 +39,54 @@ public class VoxelPlaneTools {
 						if (plane1.z2 == plane2.z1) {
 							plane1.z2 = plane2.z2;
 							plane2.dispose();
-//							voxelComposite.planeList.remove(plane2);
+							ret = true;
+						}
+					} else if (plane1.z1 == plane2.z1 && plane1.z2 == plane2.z2) {
+						if (plane1.x2 == plane2.x1) {
+							plane1.x2 = plane2.x2;
+							plane2.dispose();
+							ret = true;
 						}
 					}
 				}
 			}
 		}
 
-		Iterator<VoxelFacePlane> iterator = planeList.iterator();
-		while (iterator.hasNext()) {
-			VoxelFacePlane plane = iterator.next();
-			if (plane.disposed) {
-				iterator.remove();
-			}
-		}
-		return false;
+		removeDisposed(planeList);
+		return ret;
 	}
 
-	private static boolean mergeVertical (List<VoxelFacePlane> planeList) {
-		for (VoxelFacePlane plane1 : planeList) {
-			for (VoxelFacePlane plane2 : planeList) {
-				if (plane1.disposed || plane2.disposed) continue;
+	private static boolean mergeVertical (Array<VoxelFacePlane> planeList) {
+		boolean ret = false;
+		for (VoxelFacePlane plane1 : planeList.items) {
+			for (VoxelFacePlane plane2 : planeList.items) {
+				if (plane1 == null || plane2 == null) continue;
+				if (plane1.isDisposed() || plane2.isDisposed()) continue;
 				if (plane1 == plane2) continue;
 				if (plane1.faceBits != plane2.faceBits) continue;
 				if (plane1.x1 == plane2.x1 && plane1.x2 == plane2.x2) {
 					if (plane1.z1 == plane2.z1 && plane1.z2 == plane2.z2) {
 						if (plane1.y2 == plane2.y1) {
 							plane1.y2 = plane2.y2;
-//							voxelComposite.planeList.remove(plane2);
 							plane2.dispose();
+							ret = true;
 						}
 					}
 				}
 			}
 		}
 
-		Iterator<VoxelFacePlane> iterator = planeList.iterator();
-		while (iterator.hasNext()) {
-			VoxelFacePlane plane = iterator.next();
-			if (plane.disposed) {
-				iterator.remove();
-			}
-		}
-		return false;
+		removeDisposed(planeList);
+		return ret;
 	}
 
-	private static void mergePlanes (List<VoxelFacePlane> planeList) {
-
+	private static void mergePlanes (Array<VoxelFacePlane> planeList) {
 		while (mergeHorizontal(planeList)) {
 		}
 		while (mergeVertical(planeList)) {
-
 		}
+
+		planeList.shrink();
 	}
 
 	private static VoxelFacePlane createPlane (Direction direction) {
@@ -162,93 +169,48 @@ public class VoxelPlaneTools {
 	}
 
 	public static class PlaneHelper {
+		public Array<VoxelFacePlane> planeList = new Array<>();
+		public VoxelLevelChunk chunk;
 		public VoxelFacePlane plane;
-		public VoxelComposite voxelComposite;
+		public int y = -1;
 
 		public void reset () {
 			plane = null;
-			voxelComposite = null;
 		}
 	}
 
-	public static void handlePlane (PlaneHelper planeHelper, VoxelLevelChunk chunk, VoxelLevelEntity entity,
-			Direction direction, int x, int y, int z) {
+	private static int getHeight (VoxelLevelChunk chunk, VoxelLevelEntity entity) {
+		return entity.y;
+	}
+
+	public static void handlePlane (PlaneHelper planeHelper, VoxelLevelEntity entity, Direction direction, int x,
+			int z) {
 		if (entity == null || !entity.hasFace(direction)) {
 			planeHelper.reset();
 			return;
 		}
 
-		if (planeHelper.plane == null || planeHelper.voxelComposite != entity.voxelComposite) {
+		int y = getHeight(planeHelper.chunk, entity);
+		if (planeHelper.plane == null || planeHelper.plane.descriptor != entity.descriptor
+				|| planeHelper.y != entity.y) {
 			planeHelper.plane = createPlane(direction);
-			planeHelper.voxelComposite = entity.voxelComposite;
-			initPlane(planeHelper.plane, direction, x, y, z);
+			planeHelper.plane.descriptor = entity.descriptor;
 
-			planeHelper.voxelComposite.planeList.add(planeHelper.plane);
+			initPlane(planeHelper.plane, direction, x, y, z);
+			planeHelper.y = y;
+			planeHelper.planeList.add(planeHelper.plane);
 		} else {
-			switch (direction) {
-			case back:
-			case front:
-				planeHelper.plane.x2 = x + 1f;
-				break;
-			case left:
-			case right:
-				planeHelper.plane.z2 = z + 1f;
-				break;
-			case bottom:
-			case top:
-				planeHelper.plane.x2 = x + 1f;
-				break;
-			default:
-				break;
-			}
+			planeHelper.plane.z2 = z + 1f;
 		}
 	}
 
-	private static void determineVoxelPlanes (VoxelLevelChunk chunk, VoxelLevelEntity[][][] volume,
+	private static void determineVoxelPlanes (PlaneHelper planeHelper, VoxelLevelEntity[][] heightMap,
 			Direction direction) {
-		PlaneHelper planeHelper = new PlaneHelper();
-
-		// Es ist eher wahrscheinlich, dass sie im sichtbaren Bereich Richtung
-		// links/rechts bzw. in die
-		// Tiefe vorkommt
-		switch (direction) {
-		case left:
-		case right:
-			for (int y = 0; y < VoxelWorld.CHUNK_SIZE; ++y) {
-				for (int x = 0; x < VoxelWorld.CHUNK_SIZE; ++x) {
-					for (int z = 0; z < VoxelWorld.CHUNK_SIZE; ++z) {
-						handlePlane(planeHelper, chunk, volume[x][y][z], direction, x, y, z);
-					}
-					planeHelper.reset();
-				}
-			}
-			break;
-		case top:
-		case bottom:
-			for (int y = 0; y < VoxelWorld.CHUNK_SIZE; ++y) {
-				for (int z = 0; z < VoxelWorld.CHUNK_SIZE; ++z) {
-					for (int x = 0; x < VoxelWorld.CHUNK_SIZE; ++x) {
-						handlePlane(planeHelper, chunk, volume[x][y][z], direction, x, y, z);
-					}
-					planeHelper.reset();
-				}
-			}
-			break;
-		case front:
-		case back:
+		for (int x = 0; x < VoxelWorld.CHUNK_SIZE; ++x) {
 			for (int z = 0; z < VoxelWorld.CHUNK_SIZE; ++z) {
-				for (int y = 0; y < VoxelWorld.CHUNK_SIZE; ++y) {
-					for (int x = 0; x < VoxelWorld.CHUNK_SIZE; ++x) {
-						handlePlane(planeHelper, chunk, volume[x][y][z], direction, x, y, z);
-					}
-					planeHelper.reset();
-				}
+				handlePlane(planeHelper, heightMap[x][z], direction, x, z);
 			}
-			break;
-		default:
-			// Assert.isTrue(false);
-			break;
-
+			planeHelper.reset();
 		}
 	}
 
@@ -326,31 +288,59 @@ public class VoxelPlaneTools {
 			for (int y = 0; y < VoxelWorld.CHUNK_SIZE; ++y) {
 				for (int z = 0; z < VoxelWorld.CHUNK_SIZE; ++z) {
 					volume[x][y][z] = (VoxelLevelEntity) getVoxelLevelDown(chunk, chunkLevel, 0, x, y, z);
-					if (volume[x][y][z] != null && Logger.get() != null) {
-//						Logger.get().log(String.format("entity x(%02d) y(%02d) z(%02d)", x, y, z));
-					}
+//					if (Logger.get() != null && x == 0 && chunk.boundingBox().min.x == 0
+//							&& chunk.boundingBox().min.z == 0 && y == 15 && z == 0) {
+//						Logger.get().log(String.format("entity(%s) x(%02d) y(%02d) z(%02d)",
+//								volume[x][y][z] != null ? "1" : "0", x, y, z));
+//					}
 				}
 			}
 		}
 		return volume;
 	}
 
-	public static void determineVoxelPlaneFaces (VoxelOctree voxelOctree, VoxelLevelChunk chunk,
-			VoxelLevelEntity[][][] volume) {
+	private static int getDirectionIndex (Direction direction) {
+		switch (direction) {
+		case back:
+			return 0;
+		case front:
+			return 1;
+		case left:
+			return 2;
+		case right:
+			return 3;
+		case top:
+			return 4;
+		default:
+			break;
+		}
+		throw new RuntimeException();
+	}
+
+	private static void determineVoxelPlaneFacesDirection (VoxelOctree voxelOctree, VoxelLevelChunk chunk,
+			VoxelLevelEntity[][] heightMap) {
+		PlaneHelper[] planeHelpers = new PlaneHelper[5];
 		EnumSet.range(Direction.top, Direction.right).forEach(direction -> {
 //			System.out.println("build planes dir: " + direction);
 			if (direction == Direction.bottom) return;
-			determineVoxelPlanes(chunk, volume, direction);
+
+			int directionIndex = getDirectionIndex(direction);
+			planeHelpers[directionIndex] = new PlaneHelper();
+			planeHelpers[directionIndex].chunk = chunk;
+			determineVoxelPlanes(planeHelpers[directionIndex], heightMap, direction);
 		});
+
+		chunk.planeList.clear();
+		for (PlaneHelper planeHelper : planeHelpers) {
+			if (planeHelper == null) continue;
+			chunk.planeList.addAll(planeHelper.planeList);
+		}
 	}
 
-	public static void determineVoxelPlaneFaces (VoxelOctree voxelOctree, VoxelLevelChunk chunk) {
-		VoxelLevelEntity[][][] volume = createVolume(voxelOctree, chunk);
-		determineVoxelPlaneFaces(voxelOctree, chunk, volume);
-		chunk.voxelCompositeSet.parallelStream().forEach(voxelComposite -> {
-			mergePlanes(voxelComposite.planeList);
-			System.out.println("planeCount: " + voxelComposite.planeList.size());
-		});
+	public static void determineVoxelPlaneFaces (VoxelOctree voxelOctree, VoxelLevelChunk chunk,
+			VoxelLevelEntity[][] heightMap) {
+		determineVoxelPlaneFacesDirection(voxelOctree, chunk, heightMap);
+		mergePlanes(chunk.planeList);
 	}
 
 	public static VoxelFacePlane[] determineVoxelPlaneFacesFast (VoxelLevelChunk voxelLevelChunk,

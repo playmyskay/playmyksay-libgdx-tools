@@ -4,12 +4,15 @@ import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.math.collision.BoundingBox;
 
 public abstract class OctreeNode<N extends OctreeNode<N>> {
+	static private BoundingBox rootBoundingBox = new BoundingBox();
+
 	private N parent;
 	private N[] childs;
-	private BoundingBox boundingBox = new BoundingBox();
+
+	public abstract void update (N node, OctreeNodeDescriptor descriptor);
 
 	public boolean contains (Vector3 v) {
-		return boundingBox.contains(v);
+		return boundingBox().contains(v);
 	}
 
 	public N parent () {
@@ -20,21 +23,29 @@ public abstract class OctreeNode<N extends OctreeNode<N>> {
 		return this.parent = parent;
 	}
 
-	public int depth () {
-		int depth = 0;
-		N node = parent;
-		while (node != null) {
-			depth++;
-			node = node.parent();
-		}
-		return depth;
+	public boolean hasBoundingBox () {
+		if (parent == null) return true;
+		return false;
 	}
 
 	public BoundingBox boundingBox () {
-		return boundingBox;
+		if (parent == null) return rootBoundingBox;
+
+		//return calcBoundingBoxFromRoot(new BoundingBox());
+		return OctreeNodeTools.calcBoundingBoxFromNext(this, new BoundingBox());
+	}
+
+	public int childIndex (OctreeNode<?> child) {
+		int index = 0;
+		for (N elem : childs) {
+			if (elem == child) return index;
+			++index;
+		}
+		return -1;
 	}
 
 	public N child (int i) {
+		if (childs == null) return null;
 		return childs[i];
 	}
 
@@ -58,5 +69,7 @@ public abstract class OctreeNode<N extends OctreeNode<N>> {
 		return false;
 	}
 
-	public abstract void update (N node, OctreeNodeDescriptor descriptor);
+	public void descriptor (OctreeNodeDescriptor descriptor) {
+
+	}
 }

@@ -6,7 +6,6 @@ import com.playmyskay.voxel.common.VoxelOffset;
 import com.playmyskay.voxel.level.VoxelLevelChunk;
 
 public class ChunkRenderable {
-
 	public VoxelLevelChunk voxelLevelChunk;
 	public VoxelOffset voxelOffset = new VoxelOffset();
 	public ConcurrentLinkedQueue<UpdateData> updateDataQueue = new ConcurrentLinkedQueue<UpdateData>();

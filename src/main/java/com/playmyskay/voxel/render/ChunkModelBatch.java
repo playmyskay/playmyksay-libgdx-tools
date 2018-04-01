@@ -12,11 +12,9 @@ import com.badlogic.gdx.graphics.g3d.Environment;
 import com.badlogic.gdx.graphics.g3d.ModelBatch;
 import com.badlogic.gdx.graphics.g3d.Renderable;
 import com.badlogic.gdx.graphics.g3d.Shader;
-import com.playmyskay.voxel.common.VoxelComposite;
 import com.playmyskay.voxel.level.VoxelLevelChunk;
 
 public class ChunkModelBatch extends ModelBatch {
-
 	private Environment environment;
 	private boolean renderEnabled = true;
 	private ConcurrentLinkedQueue<ChunkRenderable> renderQueue = new ConcurrentLinkedQueue<>();
@@ -76,31 +74,29 @@ public class ChunkModelBatch extends ModelBatch {
 		List<Renderable> renderableList = chunkMap.get(chunk);
 		if (renderableList != null) {
 			for (Renderable renderable : renderableList) {
-				if (renderable.userData instanceof VoxelComposite) {
-					VoxelComposite voxelComposite = (VoxelComposite) renderable.userData;
-					if (voxelComposite.voxelLevelSet.size() == 0) {
-						remove(renderable);
-						break;
-					}
-				}
+//				if (renderable.userData instanceof VoxelComposite) {
+//					VoxelComposite voxelComposite = (VoxelComposite) renderable.userData;
+//					if (voxelComposite.voxelLevelSet.size() == 0) {
+//						remove(renderable);
+//						break;
+//					}
+//				}
 			}
 		}
 	}
 
-	private void addMulti (RenderableData[] rds, VoxelLevelChunk chunk) {
-		for (RenderableData rd : rds) {
-			Mesh mesh = Mesher.createMesh(rd);
-			if (mesh == null) continue;
-			Renderable renderable = createRenderable(rd, mesh);
-			add(renderable);
+	private void add (RenderableData rd, VoxelLevelChunk chunk) {
+		Mesh mesh = ChunkMesher.createMesh(rd);
+		if (mesh == null) return;
+		Renderable renderable = createRenderable(rd, mesh);
+		add(renderable);
 
-			List<Renderable> renderableList = chunkMap.get(chunk);
-			if (renderableList == null) {
-				renderableList = new ArrayList<Renderable>();
-				chunkMap.put(chunk, renderableList);
-			}
-			renderableList.add(renderable);
+		List<Renderable> renderableList = chunkMap.get(chunk);
+		if (renderableList == null) {
+			renderableList = new ArrayList<Renderable>();
+			chunkMap.put(chunk, renderableList);
 		}
+		renderableList.add(renderable);
 	}
 
 	public void render () {
@@ -112,7 +108,7 @@ public class ChunkModelBatch extends ModelBatch {
 				switch (ud.type) {
 				case addChunk:
 				case addVoxel:
-					addMulti(ud.renderableDatas, cr.voxelLevelChunk);
+					add(ud.renderableData, cr.voxelLevelChunk);
 					break;
 				case removeChunk:
 					removeChunk(cr.voxelLevelChunk);

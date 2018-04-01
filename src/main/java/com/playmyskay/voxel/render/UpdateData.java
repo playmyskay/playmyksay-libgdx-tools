@@ -7,5 +7,5 @@ public class UpdateData {
 	public UpdateType type;
 	public VoxelLevelChunk voxelLevelChunk;
 	public VoxelLevelEntity voxelLevelEntity;
-	public RenderableData[] renderableDatas;
+	public RenderableData renderableData;
 }

@@ -15,7 +15,7 @@ import com.playmyskay.voxel.world.VoxelWorld;
 
 public class ChunkManager {
 
-	private BoundingBox boundingBox = new BoundingBox(new Vector3(-100f, -100f, -100f), new Vector3(100f, 100f, 100f));
+	private BoundingBox boundingBox = new BoundingBox(new Vector3(0f, 0f, 0f), new Vector3(10000f, 100f, 10000f));
 	private Set<VoxelLevelChunk> visibleChunkSet = new HashSet<>();
 	private Set<VoxelLevelChunk> curChunkSet = new HashSet<>();
 	private RenderUpdateManager updateManager;
@@ -45,6 +45,7 @@ public class ChunkManager {
 		}
 
 		curChunkSet.forEach(chunk -> {
+			if (!chunk.valid()) return;
 			if (visibleChunkSet.contains(chunk)) return;
 
 			chunk.rebuild();
@@ -65,6 +66,9 @@ public class ChunkManager {
 		});
 
 		visibleChunkSet.clear();
-		visibleChunkSet.addAll(curChunkSet);
+		for (VoxelLevelChunk chunk : curChunkSet) {
+			if (!chunk.valid()) continue;
+			visibleChunkSet.add(chunk);
+		}
 	}
 }

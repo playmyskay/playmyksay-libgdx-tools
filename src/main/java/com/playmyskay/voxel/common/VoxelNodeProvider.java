@@ -16,7 +16,7 @@ public class VoxelNodeProvider implements IOctreeNodeProvider<VoxelLevel> {
 	@Override
 	public VoxelLevel create (int level) {
 		if (level == 0) return new VoxelLevelEntity();
-		if (level == 4) return new VoxelLevelChunk(voxelOctree);
+		if (level == 4) return new VoxelLevelChunk();
 		return new VoxelLevelSpace();
 	}
 

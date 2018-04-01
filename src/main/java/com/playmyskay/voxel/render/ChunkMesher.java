@@ -6,18 +6,13 @@ import com.badlogic.gdx.graphics.VertexAttribute;
 import com.badlogic.gdx.graphics.VertexAttributes;
 import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.ModelCache.TightMeshPool;
-import com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute;
-import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
-import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector3;
-import com.playmyskay.voxel.common.VoxelComposite;
 import com.playmyskay.voxel.face.VoxelFacePlane;
-import com.playmyskay.voxel.face.VoxelFaceTools;
 import com.playmyskay.voxel.level.VoxelLevelChunk;
-import com.playmyskay.voxel.type.VoxelType;
+import com.playmyskay.voxel.type.VoxelUsageType;
 import com.playmyskay.voxel.world.VoxelWorld;
 
-public class Mesher {
+public class ChunkMesher {
 	private static TightMeshPool meshPool = new TightMeshPool();
 
 	public final static int VERTEX_SIZE_MAX = VoxelWorld.CHUNK_DIM * 6 * 6;
@@ -32,54 +27,52 @@ public class Mesher {
 	}
 
 	public final static VertexAttributes vertexAttributes = new VertexAttributes(VertexAttribute.Position(),
-			VertexAttribute.Normal());
+			VertexAttribute.Normal(), VertexAttribute.ColorPacked());
 
-	public static void calculateCompositeMeshData (VoxelLevelChunk chunk, VoxelComposite voxelComposite,
-			RenderableData rd) {
-		rd.vertexCount(0);
+	public static void calculatePlaneMeshData (VoxelLevelChunk chunk, VoxelFacePlane plane, RenderableData rd) {
 		Vector3 min = chunk.boundingBox().getMin(new Vector3());
-		for (VoxelFacePlane plane : voxelComposite.planeList) {
-			rd.voxelOffset().set(min.x, min.y, min.z);
-			rd.vertexCount(VoxelFaceTools.createFaceVertices(plane, rd.vertices(), rd.vertexCount(), rd.voxelOffset()));
-		}
+		rd.voxelOffset().set(min.x, min.y, min.z);
+		VoxelVerticesTools.createPlaneVertices(plane, rd.vertices(), rd.vertexCount(), rd.voxelOffset());
 
-		// for better understanding: without reducing
+		rd.vertexCount(rd.vertices().size);
 		rd.indexCount(rd.vertexCount() / 6 / 4 * 6);
-
-		rd.material(determineMaterial(voxelComposite.voxelTypeDescriptor.voxelType));
+		rd.material(determineMaterial(plane.descriptor.voxelType));
 	}
 
-	public static void calculateChunkMeshData (VoxelLevelChunk chunk, RenderableData[] renderableDatas) {
-		int i = 0;
-		for (VoxelComposite voxelComposite : chunk.voxelCompositeSet) {
-			calculateCompositeMeshData(chunk, voxelComposite, renderableDatas[i++]);
+	public static void calculateChunkMeshData (VoxelLevelChunk chunk, RenderableData rd) {
+		rd.vertexCount(0);
+		for (VoxelFacePlane plane : chunk.planeList) {
+//			Direction direction = VoxelFace.getDirection(plane.faceBits);
+			calculatePlaneMeshData(chunk, plane, rd);
 		}
+		rd.vertices().shrink();
 	}
 
 	private static Color previewColor = new Color(Color.GREEN.r, Color.GREEN.g, Color.GREEN.b, 0.4f);
 
-	public static Material determineMaterial (VoxelType voxelType) {
-		switch (voxelType) {
-		case viewer:
-			return new Material(ColorAttribute.createDiffuse(Color.RED));
-		case selection:
-			return new Material(ColorAttribute.createDiffuse(Color.GREEN));
-		case preview:
-			return new Material(ColorAttribute.createDiffuse(previewColor), new BlendingAttribute());
-		case undef:
-		case voxel_static:
-		default:
-			return new Material(ColorAttribute.createDiffuse(new Color(MathUtils.random(0.2f, 1.0f),
-					MathUtils.random(0.2f, 1.0f), MathUtils.random(0.2f, 1.0f), 1f)));
-//			return new Material(ColorAttribute.createDiffuse(Color.WHITE));
-		}
+	public static Material determineMaterial (VoxelUsageType voxelType) {
+		return new Material();
+//		switch (voxelType) {
+//		case viewer:
+//			return new Material(ColorAttribute.createDiffuse(Color.RED));
+//		case selection:
+//			return new Material(ColorAttribute.createDiffuse(Color.GREEN));
+//		case preview:
+//			return new Material(ColorAttribute.createDiffuse(previewColor), new BlendingAttribute());
+//		case undef:
+//		case voxel_static:
+//		default:
+//			return new Material(ColorAttribute.createDiffuse(new Color(MathUtils.random(0.2f, 1.0f),
+//					MathUtils.random(0.2f, 1.0f), MathUtils.random(0.2f, 1.0f), 1f)));
+//		//			return new Material(ColorAttribute.createDiffuse(Color.WHITE));
+//		}
 	}
 
 	public static Mesh createMesh (RenderableData rd) {
 		if (rd.vertexCount() > 0) {
 			Mesh mesh = meshPool.obtain(vertexAttributes, rd.vertexCount(), rd.indexCount());
 
-			mesh.setVertices(rd.vertices(), 0, rd.vertexCount());
+			mesh.setVertices(rd.vertices().items, 0, rd.vertexCount());
 			mesh.setIndices(indices, 0, rd.indexCount());
 
 			return mesh;

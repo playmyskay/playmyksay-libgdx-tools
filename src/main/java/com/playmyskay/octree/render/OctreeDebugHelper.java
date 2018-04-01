@@ -17,9 +17,15 @@ public class OctreeDebugHelper<O extends Octree<N, ?>, N extends OctreeNode<N>> 
 
 	private O octree;
 	private ILogger logger;
+	private int level = -1;
 
 	public OctreeDebugHelper(O octree) {
+		this(octree, -1);
+	}
+
+	public OctreeDebugHelper(O octree, int level) {
 		this.octree = octree;
+		this.level = level;
 	}
 
 	public void setLogger (ILogger logger) {
@@ -47,7 +53,9 @@ public class OctreeDebugHelper<O extends Octree<N, ?>, N extends OctreeNode<N>> 
 				buildNode(builder, child, curLevel - 1);
 			}
 		}
-		buildLines(builder, node, curLevel);
+		if (level == -1 || curLevel == level) {
+			buildLines(builder, node, curLevel);
+		}
 	}
 
 	private void buildLines (MeshPartBuilder builder, N node, int curLevel) {

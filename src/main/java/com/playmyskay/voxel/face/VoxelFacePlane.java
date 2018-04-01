@@ -1,10 +1,12 @@
 package com.playmyskay.voxel.face;
 
 import com.badlogic.gdx.utils.Disposable;
+import com.playmyskay.voxel.type.VoxelTypeDescriptor;
 
 public class VoxelFacePlane implements Disposable {
-	public boolean disposed = false;
+	public VoxelTypeDescriptor descriptor;
 
+	private boolean disposed = false;
 	public byte faceBits = 0x00;
 
 	public float x1 = -1f;
@@ -29,5 +31,9 @@ public class VoxelFacePlane implements Disposable {
 	@Override
 	public void dispose () {
 		disposed = true;
+	}
+
+	public boolean isDisposed () {
+		return disposed;
 	}
 }

@@ -62,7 +62,8 @@ public class OctreeTools {
 		return near;
 	}
 
-	public static <N extends OctreeNode<N>> void calculateBounds (int index, N parentNode, BoundingBox out) {
+	public static <N extends OctreeNode<N>> void calculateBounds (int index, OctreeNode<N> parentNode,
+			BoundingBox out) {
 		Vector3 corner = OctreeTools.getCorner(index, parentNode.boundingBox());
 		Vector3 cnt = parentNode.boundingBox().getCenter(new Vector3());
 		out.set(corner, cnt);
@@ -70,7 +71,7 @@ public class OctreeTools {
 
 	public static void adjustVector (Vector3 v) {
 		if (v.x % 1f == 0f || v.x == 0f) {
-			v.add(0.5f);
+			v.x += 0.5f;
 		}
 		if (v.y % 1f == 0f || v.y == 0f) {
 			v.y += 0.5f;
@@ -105,15 +106,18 @@ public class OctreeTools {
 	}
 
 	public static <N extends OctreeNode<N>> N createChild (IOctreeNodeProvider<N> nodeProvider, N node, int level,
-			int index, BoundingBox boundingBox) {
+			int index, BoundingBox boundingBox, OctreeNodeDescriptor descriptor) {
 		if (node.childs() == null || node.child(index) == null) {
 			if (node.childs() == null) {
 				node.childs(nodeProvider.createArray(level - 1, 8));
 			}
 			node.child(index, nodeProvider.create(level - 1));
 			node.child(index).parent(node);
-			node.child(index).boundingBox().set(boundingBox);
+			if (node.child(index).hasBoundingBox()) {
+				node.child(index).boundingBox().set(boundingBox);
+			}
 			node.child(index).childs(nodeProvider.createArray(level - 1, 8));
+			node.child(index).descriptor(descriptor);
 			return node.child(index);
 		}
 		return node.child(index);

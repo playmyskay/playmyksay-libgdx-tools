@@ -1,15 +1,25 @@
 package com.playmyskay.voxel.render;
 
 import com.badlogic.gdx.graphics.g3d.Material;
+import com.badlogic.gdx.utils.FloatArray;
 import com.playmyskay.voxel.common.VoxelOffset;
 
 public class RenderableData {
 	private Material material;
-	private float[] vertices = null;
+	private FloatArray vertices = null;
 	private int vertexCount = 0;
 	private int indexCount = 0;
 	private VoxelOffset voxelOffset;
 	private Object userData;
+
+	public void reset () {
+		material = null;
+		userData = null;
+		vertices.clear();
+		vertexCount = 0;
+		indexCount = 0;
+		voxelOffset.clear();
+	}
 
 	public Material material () {
 		return material;
@@ -19,8 +29,8 @@ public class RenderableData {
 		this.material = material;
 	}
 
-	public float[] vertices () {
-		if (vertices == null) vertices = new float[Mesher.VERTEX_SIZE_MAX];
+	public FloatArray vertices () {
+		if (vertices == null) vertices = new FloatArray(1024);
 		return vertices;
 	}
 

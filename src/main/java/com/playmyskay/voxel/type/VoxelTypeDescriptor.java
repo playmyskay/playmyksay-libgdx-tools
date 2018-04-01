@@ -4,7 +4,7 @@ import com.playmyskay.voxel.look.VoxelLook;
 
 public class VoxelTypeDescriptor {
 
-	public VoxelType voxelType = VoxelType.undef;
+	public VoxelUsageType voxelType = VoxelUsageType.undef;
 	public VoxelLook voxelLook;
 
 	public VoxelTypeDescriptor() {
@@ -29,6 +29,6 @@ public class VoxelTypeDescriptor {
 	}
 
 	public void reset () {
-		voxelType = VoxelType.undef;
+		voxelType = VoxelUsageType.undef;
 	}
 }

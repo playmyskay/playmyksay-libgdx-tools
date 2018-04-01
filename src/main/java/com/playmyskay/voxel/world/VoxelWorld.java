@@ -1,17 +1,21 @@
 package com.playmyskay.voxel.world;
 
 import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.math.collision.BoundingBox;
+import com.playmyskay.octree.common.OctreeNodeTools;
 import com.playmyskay.voxel.common.VoxelOctree;
+import com.playmyskay.voxel.common.VoxelOctreeProvider;
 import com.playmyskay.voxel.common.descriptors.AddVoxelDescriptor;
 import com.playmyskay.voxel.common.descriptors.VoxelDescriptor;
+import com.playmyskay.voxel.level.VoxelLevelChunk;
 
 public class VoxelWorld {
 
 	public VoxelOctree voxelOctree = new VoxelOctree();
 	private IVoxelWorldProvider worldProvider;
-	private int width = 16;
-	private int height = 16;
-	private int depth = 16;
+	private int chunk_width = 4;
+	private int chunk_height = 2;
+	private int chunk_depth = 4;
 	private static int FEATURE_SIZE = 32;
 	public static int CHUNK_SIZE = 16;
 	public static int CHUNK_DIM = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
@@ -23,23 +27,65 @@ public class VoxelWorld {
 	private VoxelWorld(IVoxelWorldProvider worldProvider) {
 		this.worldProvider = worldProvider;
 
-		createWorld();
+		VoxelOctreeProvider.set(voxelOctree);
+
+		Runnable r = new Runnable() {
+			@Override
+			public void run () {
+				createWorld();
+			}
+		};
+		new Thread(r).start();
+	}
+
+	private BoundingBox tmpBoundingBox = new BoundingBox();
+
+	private void createChunk (Vector3 v, int chunk_pos_x, int chunk_pos_y, int chunk_pos_z,
+			AddVoxelDescriptor descriptor) {
+		int offset_x = chunk_pos_x * VoxelWorld.CHUNK_SIZE;
+		int offset_y = chunk_pos_y * VoxelWorld.CHUNK_SIZE;
+		int offset_z = chunk_pos_z * VoxelWorld.CHUNK_SIZE;
+		float cur_pos_x = 0f;
+		float cur_pos_y = 0f;
+		float cur_pos_z = 0f;
+
+		VoxelLevelChunk chunk = new VoxelLevelChunk();
+		chunk.boundingBox().set(new Vector3(offset_x, offset_y, offset_z), new Vector3(offset_x + VoxelWorld.CHUNK_SIZE,
+				offset_y + VoxelWorld.CHUNK_SIZE, offset_z + VoxelWorld.CHUNK_SIZE));
+
+		for (int x = 0; x < VoxelWorld.CHUNK_SIZE; ++x) {
+			for (int y = 0; y < VoxelWorld.CHUNK_SIZE; ++y) {
+				for (int z = 0; z < VoxelWorld.CHUNK_SIZE; ++z) {
+					cur_pos_x = (offset_x + x);
+					cur_pos_y = (offset_y + y);
+					cur_pos_z = (offset_z + z);
+					if (worldProvider.get(cur_pos_x / FEATURE_SIZE, cur_pos_y, cur_pos_z / FEATURE_SIZE)) {
+						v.set(offset_x + x, offset_y + y, offset_z + z);
+						System.out.println(String.format("x%.0f y%.0f z%.0f", v.x, v.y, v.z));
+						OctreeNodeTools.addNode(voxelOctree.nodeProvider, chunk, v, descriptor, tmpBoundingBox);
+					}
+				}
+			}
+		}
+
+		voxelOctree.addNode(chunk, descriptor);
+		chunk.valid(true);
 	}
 
 	private void createWorld () {
 		AddVoxelDescriptor descriptor = new AddVoxelDescriptor();
 		descriptor.updateInstant = false;
-		descriptor.collectFlag = true;
 
 		Vector3 v = new Vector3();
-		for (float x = 0f; x < width; ++x) {
-			for (float y = 0f; y < height; ++y) {
-				for (float z = 0f; z < depth; ++z) {
-					boolean b = worldProvider.get(x / FEATURE_SIZE, y, z / FEATURE_SIZE);
-					if (b) {
-						v.set(x, y, z);
-						setVoxel(v, descriptor);
+		int chunk_count = 0;
+		for (int x = 0; x < chunk_width; ++x) {
+			for (int y = 0; y < chunk_height; ++y) {
+				for (int z = 0; z < chunk_depth; ++z) {
+					createChunk(v, x, y, z, descriptor);
+					if (chunk_count % 2 == 0) {
+						System.out.println("chunks " + chunk_count);
 					}
+					chunk_count++;
 				}
 			}
 		}
