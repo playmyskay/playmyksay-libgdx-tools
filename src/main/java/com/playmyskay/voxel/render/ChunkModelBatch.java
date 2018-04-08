@@ -13,14 +13,20 @@ import com.badlogic.gdx.graphics.g3d.ModelBatch;
 import com.badlogic.gdx.graphics.g3d.Renderable;
 import com.badlogic.gdx.graphics.g3d.Shader;
 import com.playmyskay.voxel.level.VoxelLevelChunk;
+import com.playmyskay.voxel.render.shaders.ChunkShaderProvider;
+import com.playmyskay.voxel.world.VoxelWorld;
 
 public class ChunkModelBatch extends ModelBatch {
 	private Environment environment;
 	private boolean renderEnabled = true;
 	private ConcurrentLinkedQueue<ChunkRenderable> renderQueue = new ConcurrentLinkedQueue<>();
 	private HashMap<VoxelLevelChunk, List<Renderable>> chunkMap = new HashMap<>();
-
 	private int vertexCount = 0;
+
+	public ChunkModelBatch() {
+		super(new ChunkShaderProvider());
+
+	}
 
 	public ConcurrentLinkedQueue<ChunkRenderable> renderQueue () {
 		return renderQueue;
@@ -85,8 +91,8 @@ public class ChunkModelBatch extends ModelBatch {
 		}
 	}
 
-	private void add (RenderableData rd, VoxelLevelChunk chunk) {
-		Mesh mesh = ChunkMesher.createMesh(rd);
+	private void add (VoxelWorld world, RenderableData rd, VoxelLevelChunk chunk) {
+		Mesh mesh = ChunkMesher.createMesh(world, rd);
 		if (mesh == null) return;
 		Renderable renderable = createRenderable(rd, mesh);
 		add(renderable);
@@ -99,16 +105,24 @@ public class ChunkModelBatch extends ModelBatch {
 		renderableList.add(renderable);
 	}
 
+	public final static long MAX_UPDATE_TIME_NS = 100000;
+	private int updateCount = 0;
+	private long time_start = 0;
+	private long time_delta = 0;
+
 	public void render () {
 		if (!renderEnabled) return;
-		while (!renderQueue.isEmpty()) {
+		updateCount = 0;
+		time_delta = 0;
+		time_start = System.nanoTime();
+		while (time_delta < MAX_UPDATE_TIME_NS && !renderQueue.isEmpty()) {
 			ChunkRenderable cr = renderQueue.poll();
 			while (!cr.updateDataQueue.isEmpty()) {
 				UpdateData ud = cr.updateDataQueue.poll();
 				switch (ud.type) {
 				case addChunk:
 				case addVoxel:
-					add(ud.renderableData, cr.voxelLevelChunk);
+					add(ud.voxelWorld, ud.renderableData, cr.voxelLevelChunk);
 					break;
 				case removeChunk:
 					removeChunk(cr.voxelLevelChunk);
@@ -120,7 +134,12 @@ public class ChunkModelBatch extends ModelBatch {
 					break;
 				}
 			}
+			++updateCount;
+			time_delta = System.nanoTime() - time_start;
 		}
+
+//		System.out.println(String.format("render updates processed: %d / %d ms", updateCount,
+//				(System.nanoTime() - time_start) / 1000));
 	}
 
 	public void flush () {
@@ -162,6 +181,6 @@ public class ChunkModelBatch extends ModelBatch {
 	}
 
 	public int vertexCount () {
-		return vertexCount / 6;
+		return vertexCount / 7;
 	}
 }

@@ -2,11 +2,12 @@ package com.playmyskay.voxel.processing;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 public class JobProcessor {
 	private static ExecutorService service = Executors.newFixedThreadPool(8);
 
-	public static void add (Runnable runnable) {
-		service.submit(runnable);
+	public static Future<?> add (Runnable runnable) {
+		return service.submit(runnable);
 	}
 }

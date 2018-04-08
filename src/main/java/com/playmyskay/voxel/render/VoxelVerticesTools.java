@@ -1,49 +1,30 @@
 package com.playmyskay.voxel.render;
 
-import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.FloatArray;
 import com.playmyskay.voxel.common.VoxelOffset;
 import com.playmyskay.voxel.face.VoxelFace;
 import com.playmyskay.voxel.face.VoxelFace.Direction;
 import com.playmyskay.voxel.face.VoxelFacePlane;
-import com.playmyskay.voxel.type.VoxelTypeDescriptor;
+import com.playmyskay.voxel.type.IVoxelTypeProvider.Mode;
+import com.playmyskay.voxel.world.VoxelWorld;
 
 public class VoxelVerticesTools {
 
-	public static Color determineColor (VoxelTypeDescriptor descriptor) {
-		switch (descriptor.voxelType) {
-		case preview:
-			break;
-		case selection:
-			break;
-		case undef:
-			break;
-		case viewer:
-			break;
-		case voxel_static:
-			break;
-		default:
-			break;
-		}
-		//return Color.RED.toFloatBits();
-		float min = 0.2f;
-		float max = 0.9f;
-		return new Color(MathUtils.random(min, max), MathUtils.random(min, max), MathUtils.random(min, max), 0.7f);
-
-//		return new Color(0.8f, 0.5f, 0.8f, 1f);
+	final static public float[] getExtendedData (VoxelWorld world, VoxelFacePlane plane) {
+		return world.typeProvider().getExtendedVertices(plane.descriptor);
 	}
 
-	final static public int createPlaneVertices (VoxelFacePlane plane, FloatArray vertices, int vertexCount,
-			VoxelOffset voxelOffset) {
+	final static public int createPlaneVertices (VoxelWorld world, VoxelFacePlane plane, FloatArray vertices,
+			int vertexCount, VoxelOffset voxelOffset) {
 		Direction direction = VoxelFace.getDirection(plane.faceBits);
-		vertexCount = createPlaneVertices(direction, plane, vertices, vertexCount, voxelOffset,
-				determineColor(plane.descriptor));
+
+		float[] data = getExtendedData(world, plane);
+		vertexCount = createPlaneVertices(world, direction, plane, vertices, vertexCount, voxelOffset, data);
 		return vertexCount;
 	}
 
-	final static public int createPlaneVertices (Direction direction, VoxelFacePlane plane, FloatArray vertices,
-			int vertexCount, VoxelOffset voxelOffset, Color color) {
+	final static public int createPlaneVertices (VoxelWorld world, Direction direction, VoxelFacePlane plane,
+			FloatArray vertices, int vertexCount, VoxelOffset voxelOffset, float[] extendedData) {
 
 		boolean addX = false;
 		boolean addY = false;
@@ -83,14 +64,28 @@ public class VoxelVerticesTools {
 				//Assert.isTrue(false);
 				break;
 			}
-
 			vertices.add(voxelOffset.x + plane.x1 + (addX ? plane.getWidth() : 0f));
 			vertices.add(voxelOffset.y + plane.y1 + (addY ? plane.getHeight() : 0f));
 			vertices.add(voxelOffset.z + plane.z1 + (addZ ? plane.getDepth() : 0f));
 			createNormal(direction, plane, vertices);
-			vertices.add(color.toFloatBits());
-
-			vertexCount += 7;
+			if (extendedData != null) {
+				if (world.typeProvider().getMode() == Mode.TEXTURE) {
+					if (direction == Direction.top) {
+						float data1 = extendedData[0] + 3f;
+						float data2 = extendedData[1] + 7f;
+						if (addX) data1 = extendedData[2] + 3f + 0.01f * plane.getWidth();
+						if (addZ) data2 = extendedData[3] + 7f + 0.01f * plane.getDepth();
+						vertices.add(data1);
+						vertices.add(data2);
+					} else {
+						vertices.add(extendedData[0]);
+						vertices.add(extendedData[1]);
+					}
+				} else if (world.typeProvider().getMode() == Mode.COLOR) {
+					vertices.addAll(extendedData);
+				}
+			}
+			vertexCount += 8;
 		}
 
 		return vertexCount;

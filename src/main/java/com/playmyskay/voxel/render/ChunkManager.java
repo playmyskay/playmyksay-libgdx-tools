@@ -11,6 +11,7 @@ import com.playmyskay.voxel.actions.RunnerAction;
 import com.playmyskay.voxel.actions.common.ActionData;
 import com.playmyskay.voxel.level.VoxelLevel;
 import com.playmyskay.voxel.level.VoxelLevelChunk;
+import com.playmyskay.voxel.processing.JobProcessor;
 import com.playmyskay.voxel.world.VoxelWorld;
 
 public class ChunkManager {
@@ -29,7 +30,7 @@ public class ChunkManager {
 	public void updateVisibleChunks () {
 		curChunkSet.clear();
 
-		int chunkDepth = voxelWorld.voxelOctree.nodeProvider.depth(VoxelLevelChunk.class);
+		int chunkDepth = voxelWorld.voxelOctree.nodeProvider.levelIndex(VoxelLevelChunk.class);
 
 		RunnerAction runner = new RunnerAction();
 		runner.add(new BoundingBoxIntersectionAction(new Integer[] { chunkDepth }, boundingBox, chunkDepth));
@@ -48,18 +49,27 @@ public class ChunkManager {
 			if (!chunk.valid()) return;
 			if (visibleChunkSet.contains(chunk)) return;
 
-			chunk.rebuild();
+			JobProcessor.add(new Runnable() {
+				@Override
+				public void run () {
+//					System.out.println("chunk rebuild start " + Thread.currentThread().getId());
+					chunk.rebuild();
 
-			UpdateData updateData = new UpdateData();
-			updateData.type = UpdateType.addChunk;
-			updateData.voxelLevelChunk = chunk;
-			updateManager.add(updateData);
+					UpdateData updateData = new UpdateData();
+					updateData.type = UpdateType.addChunk;
+					updateData.voxelWorld = voxelWorld;
+					updateData.voxelLevelChunk = chunk;
+					updateManager.add(updateData);
+//					System.out.println("chunk rebuild stop " + Thread.currentThread().getId());
+				}
+			});
 		});
 
-		visibleChunkSet.parallelStream().forEach(chunk -> {
+		visibleChunkSet.forEach(chunk -> {
 			if (!curChunkSet.contains(chunk)) {
 				UpdateData updateData = new UpdateData();
 				updateData.type = UpdateType.removeChunk;
+				updateData.voxelWorld = voxelWorld;
 				updateData.voxelLevelChunk = chunk;
 				updateManager.add(updateData);
 			}

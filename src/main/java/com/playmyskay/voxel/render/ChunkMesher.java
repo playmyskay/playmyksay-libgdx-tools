@@ -1,15 +1,10 @@
 package com.playmyskay.voxel.render;
 
-import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Mesh;
-import com.badlogic.gdx.graphics.VertexAttribute;
-import com.badlogic.gdx.graphics.VertexAttributes;
-import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.ModelCache.TightMeshPool;
 import com.badlogic.gdx.math.Vector3;
 import com.playmyskay.voxel.face.VoxelFacePlane;
 import com.playmyskay.voxel.level.VoxelLevelChunk;
-import com.playmyskay.voxel.type.VoxelUsageType;
 import com.playmyskay.voxel.world.VoxelWorld;
 
 public class ChunkMesher {
@@ -26,51 +21,29 @@ public class ChunkMesher {
 		}
 	}
 
-	public final static VertexAttributes vertexAttributes = new VertexAttributes(VertexAttribute.Position(),
-			VertexAttribute.Normal(), VertexAttribute.ColorPacked());
-
-	public static void calculatePlaneMeshData (VoxelLevelChunk chunk, VoxelFacePlane plane, RenderableData rd) {
+	public static void calculatePlaneMeshData (VoxelWorld world, VoxelLevelChunk chunk, VoxelFacePlane plane,
+			RenderableData rd) {
 		Vector3 min = chunk.boundingBox().getMin(new Vector3());
 		rd.voxelOffset().set(min.x, min.y, min.z);
-		VoxelVerticesTools.createPlaneVertices(plane, rd.vertices(), rd.vertexCount(), rd.voxelOffset());
+		VoxelVerticesTools.createPlaneVertices(world, plane, rd.vertices(), rd.vertexCount(), rd.voxelOffset());
 
 		rd.vertexCount(rd.vertices().size);
 		rd.indexCount(rd.vertexCount() / 6 / 4 * 6);
-		rd.material(determineMaterial(plane.descriptor.voxelType));
+		rd.material(world.typeProvider().getMaterial());
 	}
 
-	public static void calculateChunkMeshData (VoxelLevelChunk chunk, RenderableData rd) {
+	public static void calculateChunkMeshData (VoxelWorld world, VoxelLevelChunk chunk, RenderableData rd) {
 		rd.vertexCount(0);
 		for (VoxelFacePlane plane : chunk.planeList) {
 //			Direction direction = VoxelFace.getDirection(plane.faceBits);
-			calculatePlaneMeshData(chunk, plane, rd);
+			calculatePlaneMeshData(world, chunk, plane, rd);
 		}
 		rd.vertices().shrink();
 	}
 
-	private static Color previewColor = new Color(Color.GREEN.r, Color.GREEN.g, Color.GREEN.b, 0.4f);
-
-	public static Material determineMaterial (VoxelUsageType voxelType) {
-		return new Material();
-//		switch (voxelType) {
-//		case viewer:
-//			return new Material(ColorAttribute.createDiffuse(Color.RED));
-//		case selection:
-//			return new Material(ColorAttribute.createDiffuse(Color.GREEN));
-//		case preview:
-//			return new Material(ColorAttribute.createDiffuse(previewColor), new BlendingAttribute());
-//		case undef:
-//		case voxel_static:
-//		default:
-//			return new Material(ColorAttribute.createDiffuse(new Color(MathUtils.random(0.2f, 1.0f),
-//					MathUtils.random(0.2f, 1.0f), MathUtils.random(0.2f, 1.0f), 1f)));
-//		//			return new Material(ColorAttribute.createDiffuse(Color.WHITE));
-//		}
-	}
-
-	public static Mesh createMesh (RenderableData rd) {
+	public static Mesh createMesh (VoxelWorld world, RenderableData rd) {
 		if (rd.vertexCount() > 0) {
-			Mesh mesh = meshPool.obtain(vertexAttributes, rd.vertexCount(), rd.indexCount());
+			Mesh mesh = meshPool.obtain(world.typeProvider().vertexAttributes(), rd.vertexCount(), rd.indexCount());
 
 			mesh.setVertices(rd.vertices().items, 0, rd.vertexCount());
 			mesh.setIndices(indices, 0, rd.indexCount());

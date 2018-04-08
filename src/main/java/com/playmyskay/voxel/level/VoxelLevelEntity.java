@@ -7,9 +7,20 @@ import com.playmyskay.voxel.face.VoxelFace.Direction;
 import com.playmyskay.voxel.type.VoxelTypeDescriptor;
 
 public class VoxelLevelEntity extends VoxelLevel {
-	public short y = 0;
+//	public short y = 0;
 	public byte faceBits = 0x00;
 	public VoxelTypeDescriptor descriptor;
+//	private BoundingBox boundingBox = new BoundingBox();
+//
+//	@Override
+//	public boolean hasBoundingBox () {
+//		return true;
+//	}
+//
+//	@Override
+//	public BoundingBox boundingBox () {
+//		return boundingBox;
+//	}
 
 	@Override
 	public void update (VoxelLevel node, OctreeNodeDescriptor descriptor) {

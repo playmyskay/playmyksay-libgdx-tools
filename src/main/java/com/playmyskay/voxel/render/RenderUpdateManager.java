@@ -49,7 +49,7 @@ public class RenderUpdateManager {
 				ud.renderableData = new RenderableData();
 
 				// calculate the whole chunk mesh data to prepare the final mesh instance
-				ChunkMesher.calculateChunkMeshData(chunkRenderable.voxelLevelChunk, ud.renderableData);
+				ChunkMesher.calculateChunkMeshData(ud.voxelWorld, chunkRenderable.voxelLevelChunk, ud.renderableData);
 
 				renderableHandler.update(chunkRenderable);
 			}

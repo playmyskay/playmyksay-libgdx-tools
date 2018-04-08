@@ -122,7 +122,7 @@ public class Octree<N extends OctreeNode<N>, D extends OctreeNodeDescriptor> {
 	private N processDescriptor (Vector3 v, D descriptor) {
 		switch (descriptor.getBaseActionType()) {
 		case add:
-			return OctreeNodeTools.addNode(nodeProvider, rootNode, v, descriptor, tmpBoundingBox);
+			return OctreeNodeTools.addNodeByVector(nodeProvider, rootNode, v, descriptor, tmpBoundingBox);
 		case remove:
 			return removeNode(v, descriptor);
 		default:
@@ -133,35 +133,19 @@ public class Octree<N extends OctreeNode<N>, D extends OctreeNodeDescriptor> {
 	private BoundingBox tmpBoundingBox = new BoundingBox();
 
 	public N addNode (N node, D descriptor) {
-		BoundingBox boundingBox = new BoundingBox();
-		boundingBox.set(node.boundingBox());
+		tmpBoundingBox.set(node.boundingBox());
 		if (descriptor.getBaseActionType() == BaseActionType.add) {
 			Vector3 corner = new Vector3();
-			expandRootNode(boundingBox.getCorner000(corner), descriptor);
-			expandRootNode(boundingBox.getCorner100(corner), descriptor);
-			expandRootNode(boundingBox.getCorner001(corner), descriptor);
-			expandRootNode(boundingBox.getCorner101(corner), descriptor);
-			expandRootNode(boundingBox.getCorner010(corner), descriptor);
-			expandRootNode(boundingBox.getCorner110(corner), descriptor);
-			expandRootNode(boundingBox.getCorner011(corner), descriptor);
-			expandRootNode(boundingBox.getCorner111(corner), descriptor);
+			expandRootNode(tmpBoundingBox.getCorner000(corner), descriptor);
+			expandRootNode(tmpBoundingBox.getCorner100(corner), descriptor);
+			expandRootNode(tmpBoundingBox.getCorner001(corner), descriptor);
+			expandRootNode(tmpBoundingBox.getCorner101(corner), descriptor);
+			expandRootNode(tmpBoundingBox.getCorner010(corner), descriptor);
+			expandRootNode(tmpBoundingBox.getCorner110(corner), descriptor);
+			expandRootNode(tmpBoundingBox.getCorner011(corner), descriptor);
+			expandRootNode(tmpBoundingBox.getCorner111(corner), descriptor);
 
-			N parentNode = null;
-			N childNode = rootNode;
-			for (int level = curLevel; level > 0 && childNode != null; --level) {
-				parentNode = childNode;
-				childNode = OctreeTools.contains(childNode, node.boundingBox());
-				if (childNode != null) continue;
-
-				for (int index = 0; index < 8; index++) {
-					OctreeTools.calculateBounds(index, parentNode, boundingBox);
-					if (boundingBox.contains(node.boundingBox())) {
-						node.parent(parentNode);
-						parentNode.child(index, node);
-						return node;
-					}
-				}
-			}
+			return OctreeNodeTools.addNodeByBoundingBox(this, node, descriptor, tmpBoundingBox);
 		}
 
 		return null;

@@ -24,7 +24,18 @@ public class OctreeTraversal {
 		return null;
 	}
 
-	public static <N extends OctreeNode<N>> N get (Octree<N, ?> octree, Vector3 v) {
+	public static <N extends OctreeNode<N>> N getFromNode (N node, int levelFrom, Vector3 v) {
+		for (int level = levelFrom; level > 0; --level) {
+			node = next(node, v);
+			if (node == null) {
+				return null;
+			}
+		}
+
+		return node;
+	}
+
+	public static <N extends OctreeNode<N>> N getFromRoot (Octree<N, ?> octree, Vector3 v) {
 		N node = octree.rootNode;
 		for (int level = octree.curLevel; level > 0; --level) {
 			node = next(node, v);

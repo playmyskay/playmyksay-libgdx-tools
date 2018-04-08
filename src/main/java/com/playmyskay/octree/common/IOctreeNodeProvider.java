@@ -5,5 +5,5 @@ public interface IOctreeNodeProvider<N extends OctreeNode<N>> {
 
 	public N[] createArray (int level, int size);
 
-	public int depth (Class<?> clazz);
+	public int levelIndex (Class<?> clazz);
 }

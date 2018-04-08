@@ -38,33 +38,36 @@ public class VoxelLevelChunk extends VoxelLevel {
 		return boundingBox;
 	}
 
-	private static VoxelLevelEntity[][] createHeightMap (VoxelLevelChunk chunk) {
-		VoxelLevelEntity[][][] volume = VoxelPlaneTools.createVolume(VoxelOctreeProvider.get(), chunk);
-		VoxelLevelEntity[][] heightMap = new VoxelLevelEntity[VoxelWorld.CHUNK_SIZE][VoxelWorld.CHUNK_SIZE];
-
-		final int y_start = VoxelWorld.CHUNK_SIZE / 2;
-		int y_step = 1;
-		for (int x = 0; x < VoxelWorld.CHUNK_SIZE; ++x) {
-			for (int z = 0; z < VoxelWorld.CHUNK_SIZE; ++z) {
-				y_step = volume[x][y_start][z] != null ? 1 : -1;
-				for (int y = y_start; y >= 0 && y < VoxelWorld.CHUNK_SIZE; y += y_step) {
-					if (y_step == -1 && volume[x][y][z] != null) {
-						heightMap[x][z] = volume[x][y][z];
-						heightMap[x][z].y = (short) y;
-						break;
-					} else if (y_step == 1) {
-						if (volume[x][y][z] == null) {
-							break;
-						} else {
-							heightMap[x][z] = volume[x][y][z];
-							heightMap[x][z].y = (short) (y);
-						}
-					}
-				}
-			}
-		}
-		return heightMap;
-	}
+//	private static VoxelLevelEntity[][] createHeightMap (VoxelLevelChunk chunk) {
+//		VoxelLevelEntity[][][] volume = VoxelPlaneTools.createVolume(VoxelOctreeProvider.get(), chunk);
+//		VoxelLevelEntity[][] heightMap = new VoxelLevelEntity[VoxelWorld.CHUNK_SIZE][VoxelWorld.CHUNK_SIZE];
+//
+//		final int y_start = VoxelWorld.CHUNK_SIZE / 2;
+//		int y_step = 1;
+//		for (int x = 0; x < VoxelWorld.CHUNK_SIZE; ++x) {
+//			for (int z = 0; z < VoxelWorld.CHUNK_SIZE; ++z) {
+//				if (x == 0 && z == 2) {
+//					boolean b = true;
+//				}
+//				y_step = volume[x][y_start][z] != null ? 1 : -1;
+//				for (int y = y_start; y >= 0 && y < VoxelWorld.CHUNK_SIZE; y += y_step) {
+//					if (y_step == -1 && volume[x][y][z] != null) {
+//						heightMap[x][z] = volume[x][y][z];
+//						heightMap[x][z].y = (short) y;
+//						break;
+//					} else if (y_step == 1) {
+//						if (volume[x][y][z] == null) {
+//							break;
+//						} else {
+//							heightMap[x][z] = volume[x][y][z];
+//							heightMap[x][z].y = (short) (y);
+//						}
+//					}
+//				}
+//			}
+//		}
+//		return heightMap;
+//	}
 
 	@Override
 	public void update (VoxelLevel node, OctreeNodeDescriptor descriptor) {
@@ -74,23 +77,25 @@ public class VoxelLevelChunk extends VoxelLevel {
 			if (voxelDescriptor.getBaseActionType() == BaseActionType.add) {
 				voxelLevelEntity.descriptor = voxelDescriptor.voxelTypeDescriptor;
 			} else if (voxelDescriptor.getBaseActionType() == BaseActionType.remove) {
-				VoxelLevelEntity[][] heightMap = createHeightMap(this);
-				VoxelPlaneTools.determineVoxelPlaneFaces(VoxelOctreeProvider.get(), this, heightMap);
+//				VoxelLevelEntity[][] heightMap = createHeightMap(this);
+//				VoxelPlaneTools.determineVoxelPlaneFaces(VoxelOctreeProvider.get(), this, heightMap);
 			}
 		}
 	}
 
-	private static VoxelLevelEntity getOffsetEntity (VoxelLevelEntity entity, int offsetX, int offsetY, int offsetZ) {
+	private static VoxelLevelEntity getOffsetEntity (VoxelLevelChunk chunk, VoxelLevelEntity entity, int offsetX,
+			int offsetY, int offsetZ) {
 		Vector3 v = entity.boundingBox().getCenter(new Vector3()).add(offsetX, offsetY, offsetZ);
-		VoxelLevelEntity offsetEntity = (VoxelLevelEntity) OctreeTraversal.get(VoxelOctreeProvider.get(), v);
+		VoxelLevelEntity offsetEntity = (VoxelLevelEntity) OctreeTraversal.getFromNode(chunk, 4, v);
 		return offsetEntity;
 	}
 
-	private static void rebuildFaces (VoxelLevelEntity[][] heightMap) {
+	private static void rebuildFaces (VoxelLevelChunk chunk, VoxelLevelEntity[][][] volume) {
 		for (int x = 0; x < VoxelWorld.CHUNK_SIZE; ++x) {
-			for (int z = 0; z < VoxelWorld.CHUNK_SIZE; ++z) {
-				if (heightMap[x][z] == null) continue;
-				determineFaces(heightMap[x][z]);
+			for (int y = 0; y < VoxelWorld.CHUNK_SIZE; ++y) {
+				for (int z = 0; z < VoxelWorld.CHUNK_SIZE; ++z) {
+					if (volume[x][y][z] == null) continue;
+					determineFaces(chunk, volume[x][y][z]);
 
 //				EnumSet.range(Direction.top, Direction.right).forEach(direction -> {
 //					if (entity.hasFace(direction)) {
@@ -99,22 +104,24 @@ public class VoxelLevelChunk extends VoxelLevel {
 ////										v.z, direction.toString()));
 //					}
 //				});
+				}
 			}
 		}
 
 	}
 
 	public void rebuild () {
-		VoxelLevelEntity[][] heightMap = createHeightMap(this);
-		rebuildFaces(heightMap);
-		VoxelPlaneTools.determineVoxelPlaneFaces(VoxelOctreeProvider.get(), this, heightMap);
+//		VoxelLevelEntity[][] heightMap = createHeightMap(this);
+		VoxelLevelEntity[][][] volume = VoxelPlaneTools.createVolume(VoxelOctreeProvider.get(), this);
+		rebuildFaces(this, volume);
+		VoxelPlaneTools.determineVoxelPlaneFaces(VoxelOctreeProvider.get(), this, volume);
 	}
 
 	VoxelPosition tmpVoxelPosition = new VoxelPosition();
 
-	private static void determineFace (Direction direction, VoxelLevelEntity entity, int offsetX, int offsetY,
-			int offsetZ) {
-		VoxelLevelEntity offsetEntity = getOffsetEntity(entity, offsetX, offsetY, offsetZ);
+	private static void determineFace (Direction direction, VoxelLevelChunk chunk, VoxelLevelEntity entity, int offsetX,
+			int offsetY, int offsetZ) {
+		VoxelLevelEntity offsetEntity = getOffsetEntity(chunk, entity, offsetX, offsetY, offsetZ);
 		if (offsetEntity == null) {
 			entity.addFace(direction);
 		} else {
@@ -128,14 +135,14 @@ public class VoxelLevelChunk extends VoxelLevel {
 
 	}
 
-	private static void determineFaces (VoxelLevelEntity entity) {
+	private static void determineFaces (VoxelLevelChunk chunk, VoxelLevelEntity entity) {
 		entity.faceBits = VoxelFace.getDirectionBit(Direction.none);
-		determineFace(Direction.left, entity, -1, 0, 0);
-		determineFace(Direction.right, entity, 1, 0, 0);
-		determineFace(Direction.top, entity, 0, 1, 0);
-		determineFace(Direction.bottom, entity, 0, -1, 0);
-		determineFace(Direction.front, entity, 0, 0, 1);
-		determineFace(Direction.back, entity, 0, 0, -1);
+		determineFace(Direction.left, chunk, entity, -1, 0, 0);
+		determineFace(Direction.right, chunk, entity, 1, 0, 0);
+		determineFace(Direction.top, chunk, entity, 0, 1, 0);
+		determineFace(Direction.bottom, chunk, entity, 0, -1, 0);
+		determineFace(Direction.front, chunk, entity, 0, 0, 1);
+		determineFace(Direction.back, chunk, entity, 0, 0, -1);
 	}
 
 }

@@ -8,24 +8,26 @@ import com.playmyskay.voxel.common.VoxelOctreeProvider;
 import com.playmyskay.voxel.common.descriptors.AddVoxelDescriptor;
 import com.playmyskay.voxel.common.descriptors.VoxelDescriptor;
 import com.playmyskay.voxel.level.VoxelLevelChunk;
+import com.playmyskay.voxel.type.IVoxelTypeProvider;
 
 public class VoxelWorld {
 
 	public VoxelOctree voxelOctree = new VoxelOctree();
 	private IVoxelWorldProvider worldProvider;
+	private IVoxelTypeProvider typeProvider;
 	private int chunk_width = 4;
-	private int chunk_height = 2;
+	private int chunk_height = 4;
 	private int chunk_depth = 4;
-	private static int FEATURE_SIZE = 32;
 	public static int CHUNK_SIZE = 16;
 	public static int CHUNK_DIM = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
 
-	public static VoxelWorld create (IVoxelWorldProvider worldProvider) {
-		return new VoxelWorld(worldProvider);
+	public static VoxelWorld create (IVoxelWorldProvider worldProvider, IVoxelTypeProvider typeProvider) {
+		return new VoxelWorld(worldProvider, typeProvider);
 	}
 
-	private VoxelWorld(IVoxelWorldProvider worldProvider) {
+	private VoxelWorld(IVoxelWorldProvider worldProvider, IVoxelTypeProvider typeProvider) {
 		this.worldProvider = worldProvider;
+		this.typeProvider = typeProvider;
 
 		VoxelOctreeProvider.set(voxelOctree);
 
@@ -59,10 +61,12 @@ public class VoxelWorld {
 					cur_pos_x = (offset_x + x);
 					cur_pos_y = (offset_y + y);
 					cur_pos_z = (offset_z + z);
-					if (worldProvider.get(cur_pos_x / FEATURE_SIZE, cur_pos_y, cur_pos_z / FEATURE_SIZE)) {
+					if (worldProvider.get(cur_pos_x, cur_pos_y, cur_pos_z)) {
 						v.set(offset_x + x, offset_y + y, offset_z + z);
-						System.out.println(String.format("x%.0f y%.0f z%.0f", v.x, v.y, v.z));
-						OctreeNodeTools.addNode(voxelOctree.nodeProvider, chunk, v, descriptor, tmpBoundingBox);
+//						if (Logger.get() != null) {
+////							Logger.get().log(String.format("x%.0f y%.0f z%.0f", v.x, v.y, v.z));
+//						}
+						OctreeNodeTools.addNodeByVector(voxelOctree.nodeProvider, chunk, v, descriptor, tmpBoundingBox);
 					}
 				}
 			}
@@ -82,9 +86,9 @@ public class VoxelWorld {
 			for (int y = 0; y < chunk_height; ++y) {
 				for (int z = 0; z < chunk_depth; ++z) {
 					createChunk(v, x, y, z, descriptor);
-					if (chunk_count % 2 == 0) {
-						System.out.println("chunks " + chunk_count);
-					}
+//					if (chunk_count % 2 == 0) {
+//						System.out.println("chunks " + chunk_count);
+//					}
 					chunk_count++;
 				}
 			}
@@ -93,5 +97,9 @@ public class VoxelWorld {
 
 	public void setVoxel (Vector3 v, VoxelDescriptor descriptor) {
 		voxelOctree.setNode(v, descriptor);
+	}
+
+	public IVoxelTypeProvider typeProvider () {
+		return typeProvider;
 	}
 }

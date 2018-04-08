@@ -179,20 +179,19 @@ public class VoxelPlaneTools {
 		}
 	}
 
-	private static int getHeight (VoxelLevelChunk chunk, VoxelLevelEntity entity) {
-		return entity.y;
-	}
+//	private static int getHeight (VoxelLevelChunk chunk, VoxelLevelEntity entity) {
+//		return entity.y;
+//	}
 
-	public static void handlePlane (PlaneHelper planeHelper, VoxelLevelEntity entity, Direction direction, int x,
+	public static void handlePlane (PlaneHelper planeHelper, VoxelLevelEntity entity, Direction direction, int x, int y,
 			int z) {
 		if (entity == null || !entity.hasFace(direction)) {
 			planeHelper.reset();
 			return;
 		}
 
-		int y = getHeight(planeHelper.chunk, entity);
-		if (planeHelper.plane == null || planeHelper.plane.descriptor != entity.descriptor
-				|| planeHelper.y != entity.y) {
+//		int y = getHeight(planeHelper.chunk, entity);
+		if (planeHelper.plane == null || planeHelper.plane.descriptor != entity.descriptor || planeHelper.y != y) {
 			planeHelper.plane = createPlane(direction);
 			planeHelper.plane.descriptor = entity.descriptor;
 
@@ -204,13 +203,18 @@ public class VoxelPlaneTools {
 		}
 	}
 
-	private static void determineVoxelPlanes (PlaneHelper planeHelper, VoxelLevelEntity[][] heightMap,
+	private static void determineVoxelPlanes (PlaneHelper planeHelper, VoxelLevelEntity[][][] volume,
 			Direction direction) {
 		for (int x = 0; x < VoxelWorld.CHUNK_SIZE; ++x) {
-			for (int z = 0; z < VoxelWorld.CHUNK_SIZE; ++z) {
-				handlePlane(planeHelper, heightMap[x][z], direction, x, z);
+			for (int y = 0; y < VoxelWorld.CHUNK_SIZE; ++y) {
+				for (int z = 0; z < VoxelWorld.CHUNK_SIZE; ++z) {
+					if (x == 0 && z == 2 && direction == Direction.right) {
+						boolean b = true;
+					}
+					handlePlane(planeHelper, volume[x][y][z], direction, x, y, z);
+				}
+				planeHelper.reset();
 			}
-			planeHelper.reset();
 		}
 	}
 
@@ -283,13 +287,12 @@ public class VoxelPlaneTools {
 
 	public static VoxelLevelEntity[][][] createVolume (VoxelOctree voxelOctree, VoxelLevelChunk chunk) {
 		VoxelLevelEntity[][][] volume = new VoxelLevelEntity[VoxelWorld.CHUNK_SIZE][VoxelWorld.CHUNK_SIZE][VoxelWorld.CHUNK_SIZE];
-		int chunkLevel = voxelOctree.nodeProvider.depth(VoxelLevelChunk.class);
+		int chunkLevel = voxelOctree.nodeProvider.levelIndex(VoxelLevelChunk.class);
 		for (int x = 0; x < VoxelWorld.CHUNK_SIZE; ++x) {
 			for (int y = 0; y < VoxelWorld.CHUNK_SIZE; ++y) {
 				for (int z = 0; z < VoxelWorld.CHUNK_SIZE; ++z) {
 					volume[x][y][z] = (VoxelLevelEntity) getVoxelLevelDown(chunk, chunkLevel, 0, x, y, z);
-//					if (Logger.get() != null && x == 0 && chunk.boundingBox().min.x == 0
-//							&& chunk.boundingBox().min.z == 0 && y == 15 && z == 0) {
+//					if (Logger.get() != null && x == 0 && z == 2) {
 //						Logger.get().log(String.format("entity(%s) x(%02d) y(%02d) z(%02d)",
 //								volume[x][y][z] != null ? "1" : "0", x, y, z));
 //					}
@@ -318,7 +321,7 @@ public class VoxelPlaneTools {
 	}
 
 	private static void determineVoxelPlaneFacesDirection (VoxelOctree voxelOctree, VoxelLevelChunk chunk,
-			VoxelLevelEntity[][] heightMap) {
+			VoxelLevelEntity[][][] volume) {
 		PlaneHelper[] planeHelpers = new PlaneHelper[5];
 		EnumSet.range(Direction.top, Direction.right).forEach(direction -> {
 //			System.out.println("build planes dir: " + direction);
@@ -327,7 +330,7 @@ public class VoxelPlaneTools {
 			int directionIndex = getDirectionIndex(direction);
 			planeHelpers[directionIndex] = new PlaneHelper();
 			planeHelpers[directionIndex].chunk = chunk;
-			determineVoxelPlanes(planeHelpers[directionIndex], heightMap, direction);
+			determineVoxelPlanes(planeHelpers[directionIndex], volume, direction);
 		});
 
 		chunk.planeList.clear();
@@ -338,8 +341,8 @@ public class VoxelPlaneTools {
 	}
 
 	public static void determineVoxelPlaneFaces (VoxelOctree voxelOctree, VoxelLevelChunk chunk,
-			VoxelLevelEntity[][] heightMap) {
-		determineVoxelPlaneFacesDirection(voxelOctree, chunk, heightMap);
+			VoxelLevelEntity[][][] volume) {
+		determineVoxelPlaneFacesDirection(voxelOctree, chunk, volume);
 		mergePlanes(chunk.planeList);
 	}
 

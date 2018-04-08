@@ -9,7 +9,7 @@ public class RenderableUpdater implements RenderableHandler {
 
 	@Override
 	public void update (ChunkRenderable chunkRenderable) {
-		chunkModelBatch.renderQueue().add(chunkRenderable);
+		chunkModelBatch.renderQueue().offer(chunkRenderable);
 	}
 
 }

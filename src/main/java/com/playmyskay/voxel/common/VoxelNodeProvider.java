@@ -3,6 +3,7 @@ package com.playmyskay.voxel.common;
 import com.playmyskay.octree.common.IOctreeNodeProvider;
 import com.playmyskay.voxel.level.VoxelLevel;
 import com.playmyskay.voxel.level.VoxelLevelChunk;
+import com.playmyskay.voxel.level.VoxelLevelChunkSpace;
 import com.playmyskay.voxel.level.VoxelLevelEntity;
 import com.playmyskay.voxel.level.VoxelLevelSpace;
 
@@ -17,6 +18,7 @@ public class VoxelNodeProvider implements IOctreeNodeProvider<VoxelLevel> {
 	public VoxelLevel create (int level) {
 		if (level == 0) return new VoxelLevelEntity();
 		if (level == 4) return new VoxelLevelChunk();
+		if (level > 0 && level < 4) return new VoxelLevelChunkSpace();
 		return new VoxelLevelSpace();
 	}
 
@@ -26,7 +28,7 @@ public class VoxelNodeProvider implements IOctreeNodeProvider<VoxelLevel> {
 	}
 
 	@Override
-	public int depth (Class<?> clazz) {
+	public int levelIndex (Class<?> clazz) {
 		if (clazz.equals(VoxelLevelEntity.class)) return 0;
 		if (clazz.equals(VoxelLevelChunk.class)) return 4;
 		return -1;
