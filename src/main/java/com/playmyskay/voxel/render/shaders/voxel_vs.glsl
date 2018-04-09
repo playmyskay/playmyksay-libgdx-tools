@@ -187,15 +187,21 @@ varying vec3 v_ambientLight;
 float TILE_SIZE_X = 1.0 / 8.0;
 float TILE_SIZE_Y = 1.0 / 16.0;
 
-varying vec2 v_dimUV;
+attribute vec4 a_voxelTexture;
+// attribute float a_normalType;
+
 varying vec2 v_tileOffset;
+varying vec2 v_faceOffset;
 
 void main() {
 	#ifdef diffuseTextureFlag
-		v_tileOffset = floor(a_texCoord0);
-		v_dimUV = fract(a_texCoord0) * 100.0;
-		v_diffuseUV = u_diffuseUVTransform.xy + v_dimUV * u_diffuseUVTransform.zw;
+		// v_tileOffset = floor(a_texCoord0);
+		// v_dimUV = fract(a_texCoord0) * 100.0;
+		// v_diffuseUV = u_diffuseUVTransform.xy + v_dimUV * u_diffuseUVTransform.zw;
 	#endif //diffuseTextureFlag
+	
+	v_tileOffset.xy = vec2(floor(a_voxelTexture.r * 255.0 + 0.5), floor(a_voxelTexture.g * 255.0 + 0.5));
+	v_faceOffset.xy = vec2(floor(a_voxelTexture.b * 255.0 + 0.5), floor(a_voxelTexture.a * 255.0 + 0.5));
 	
 	#ifdef specularTextureFlag
 		v_specularUV = u_specularUVTransform.xy + a_texCoord0 * u_specularUVTransform.zw;
@@ -258,11 +264,19 @@ void main() {
 		#if defined(skinningFlag)
 			vec3 normal = normalize((u_worldTrans * skinning * vec4(a_normal, 0.0)).xyz);
 		#else
+			/*vec3 normal = vec3(0.0);
+			switch(int(a_normalType)) {
+				case 0x01: normal = vec3( 0.0,  1.0,  0.0); break; // top
+				case 0x02: normal = vec3( 0.0, -1.0,  0.0); break; // bottom
+				case 0x04: normal = vec3(-1.0,  0.0,  0.0); break; // left
+				case 0x08: normal = vec3( 1.0,  0.0,  0.0); break; // right
+				case 0x10: normal = vec3( 0.0,  0.0,  1.0); break; // front
+				case 0x20: normal = vec3( 0.0,  0.0, -1.0); break; // back
+			}*/
 			vec3 normal = normalize(u_normalMatrix * a_normal);
 		#endif
 		v_normal = normal;
 	#endif // normalFlag
-
     #ifdef fogFlag
         vec3 flen = u_cameraPosition.xyz - pos.xyz;
         float fog = dot(flen, flen) * u_cameraPosition.w;

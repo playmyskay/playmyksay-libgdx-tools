@@ -13,6 +13,7 @@ precision mediump float;
 #define specularFlag
 #endif
 
+#define normalFlag
 #ifdef normalFlag
 varying vec3 v_normal;
 #endif //normalFlag
@@ -107,29 +108,22 @@ varying float v_fog;
 float TILE_SIZE_X = 0.125;
 float TILE_SIZE_Y = 0.0625;
 
-varying vec2 v_dimUV;
 varying vec2 v_tileOffset;
+varying vec2 v_faceOffset;
+
+
 
 void main() {
 	#if defined(normalFlag) 
 		vec3 normal = v_normal;
 	#endif // normalFlag
 	
-	//gl_FragColor = vec4(mod(v_dimUV.x, 1.0), mod(v_dimUV.x, 1.0), mod(v_dimUV.x, 1.0), 1.0);
-	//return;
-	
-	//gl_FragColor = vec4(voxelTextureUV.x, voxelTextureUV.x, voxelTextureUV.x, 1.0);
-	//return;
+	vec2 tileOffset = v_tileOffset.xy;
+	vec2 faceOffset = v_faceOffset.xy;
 	
 	vec2 voxelTextureUV = vec2(
-		(v_tileOffset.x * TILE_SIZE_X) + mod(v_dimUV.x, 1.0) * TILE_SIZE_X + v_tileOffset.x * (2.0 / 1024.0),
-		(v_tileOffset.y * TILE_SIZE_Y) + mod(v_dimUV.y, 1.0) * TILE_SIZE_Y + v_tileOffset.y * (2.0 / 2048.0));
-	
-	//gl_FragColor = vec4(voxelTextureUV.x, voxelTextureUV.x, voxelTextureUV.x, 1.0);
-	//return;
-	
-	//gl_FragColor = vec4(1.0 / tileOffset.x, 1.0 / tileOffset.x, 1.0 / tileOffset.x, 1.0);
-	//return;
+		(tileOffset.x * TILE_SIZE_X) + mod(faceOffset.x, 1.0) * TILE_SIZE_X + tileOffset.x * (2.0 / 1024.0),
+		(tileOffset.y * TILE_SIZE_Y) + mod(faceOffset.y, 1.0) * TILE_SIZE_Y + tileOffset.y * (2.0 / 2048.0));
 	
 	#if defined(diffuseTextureFlag) && defined(diffuseColorFlag) && defined(colorFlag)
 		vec4 diffuse = texture2D(u_diffuseTexture, voxelTextureUV) * u_diffuseColor * v_color;

@@ -1,6 +1,7 @@
 package com.playmyskay.voxel.render;
 
 import com.badlogic.gdx.utils.FloatArray;
+import com.badlogic.gdx.utils.NumberUtils;
 import com.playmyskay.voxel.common.VoxelOffset;
 import com.playmyskay.voxel.face.VoxelFace;
 import com.playmyskay.voxel.face.VoxelFace.Direction;
@@ -21,6 +22,13 @@ public class VoxelVerticesTools {
 		float[] data = getExtendedData(world, plane);
 		vertexCount = createPlaneVertices(world, direction, plane, vertices, vertexCount, voxelOffset, data);
 		return vertexCount;
+	}
+
+	final static public float packValues (int r, int g, int b, int a) {
+//		int packedValue = ((int) (255 * a) << 24) | ((int) (255 * b) << 16) | ((int) (255 * g) << 8)
+//				| ((int) (255 * r));
+		int packedValue = ((int) (a) << 24) | ((int) (b) << 16) | ((int) (g) << 8) | ((int) (r));
+		return NumberUtils.intBitsToFloat(packedValue);
 	}
 
 	final static public int createPlaneVertices (VoxelWorld world, Direction direction, VoxelFacePlane plane,
@@ -67,28 +75,37 @@ public class VoxelVerticesTools {
 			vertices.add(voxelOffset.x + plane.x1 + (addX ? plane.getWidth() : 0f));
 			vertices.add(voxelOffset.y + plane.y1 + (addY ? plane.getHeight() : 0f));
 			vertices.add(voxelOffset.z + plane.z1 + (addZ ? plane.getDepth() : 0f));
+//			createNormalByType(direction, plane, vertices);
 			createNormal(direction, plane, vertices);
 			if (extendedData != null) {
 				if (world.typeProvider().getMode() == Mode.TEXTURE) {
-					if (direction == Direction.top) {
-						float data1 = extendedData[0] + 3f;
-						float data2 = extendedData[1] + 7f;
-						if (addX) data1 = extendedData[2] + 3f + 0.01f * plane.getWidth();
-						if (addZ) data2 = extendedData[3] + 7f + 0.01f * plane.getDepth();
-						vertices.add(data1);
-						vertices.add(data2);
-					} else {
-						vertices.add(extendedData[0]);
-						vertices.add(extendedData[1]);
+					int tileOffsetX = (int) extendedData[0];
+					int tileOffsetY = (int) extendedData[1];
+					if (direction == Direction.top || direction == Direction.bottom) {
+						int faceOffsetX = (int) (addX ? plane.getWidth() : 0);
+						int faceOffsetY = (int) (addZ ? plane.getDepth() : 0);
+						vertices.add(packValues(tileOffsetX, tileOffsetY, faceOffsetX, faceOffsetY));
+					} else if (direction == Direction.left || direction == Direction.right) {
+						int faceOffsetX = (int) (addZ ? plane.getDepth() : 0);
+						int faceOffsetY = (int) (addY ? plane.getHeight() : 0);
+						vertices.add(packValues(tileOffsetX, tileOffsetY, faceOffsetX, faceOffsetY));
+					} else if (direction == Direction.front || direction == Direction.back) {
+						int faceOffsetX = (int) (addY ? plane.getHeight() : 0);
+						int faceOffsetY = (int) (addX ? plane.getWidth() : 0);
+						vertices.add(packValues(tileOffsetX, tileOffsetY, faceOffsetX, faceOffsetY));
 					}
 				} else if (world.typeProvider().getMode() == Mode.COLOR) {
 					vertices.addAll(extendedData);
 				}
 			}
-			vertexCount += 8;
+			vertexCount += 5;
 		}
 
 		return vertexCount;
+	}
+
+	public final static void createNormalByType (Direction direction, VoxelFacePlane plane, FloatArray vertices) {
+		vertices.add(VoxelFace.getDirectionBit(direction));
 	}
 
 	public final static void createNormal (Direction direction, VoxelFacePlane plane, FloatArray vertices) {
