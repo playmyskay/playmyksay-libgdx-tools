@@ -2,6 +2,7 @@ package com.playmyskay.octree.common;
 
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.math.collision.BoundingBox;
+import com.badlogic.gdx.utils.GdxRuntimeException;
 
 public abstract class OctreeNode<N extends OctreeNode<N>> {
 	static private BoundingBox rootBoundingBox = new BoundingBox();
@@ -11,8 +12,8 @@ public abstract class OctreeNode<N extends OctreeNode<N>> {
 
 	public abstract void update (N node, OctreeNodeDescriptor descriptor);
 
-	public boolean contains (Vector3 v) {
-		return boundingBox().contains(v);
+	public boolean contains (Vector3 v, OctreeCalc calc) {
+		return boundingBox(calc).contains(v);
 	}
 
 	public N parent () {
@@ -30,9 +31,13 @@ public abstract class OctreeNode<N extends OctreeNode<N>> {
 
 	public BoundingBox boundingBox () {
 		if (parent == null) return rootBoundingBox;
+		throw new GdxRuntimeException("use method boundingBox (OctreeCalc calc)");
+	}
 
-		//return calcBoundingBoxFromRoot(new BoundingBox());
-		return OctreeNodeTools.calcBoundingBoxFromNext(this, new BoundingBox());
+	public BoundingBox boundingBox (OctreeCalc calc) {
+		if (parent == null) return rootBoundingBox;
+		if (hasBoundingBox()) return boundingBox();
+		return OctreeNodeTools.calcBoundingBoxFromNode(this, calc);
 	}
 
 	public int childIndex (OctreeNode<?> child) {

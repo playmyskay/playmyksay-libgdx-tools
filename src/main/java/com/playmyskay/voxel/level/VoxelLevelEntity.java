@@ -46,5 +46,4 @@ public class VoxelLevelEntity extends VoxelLevel {
 		}
 		super.descriptor(descriptor);
 	}
-
 }

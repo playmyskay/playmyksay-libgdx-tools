@@ -18,9 +18,9 @@ public class ChunkShader extends DefaultShader {
 		}
 	};
 
-	public ChunkShader(Renderable renderable) {
-		super(renderable);
-		register(voxelTextureSizeUniform, voxelTextureSizeSetter);
+	public ChunkShader(Renderable renderable, Config config) {
+		super(renderable, config);
+//		register(voxelTextureSizeUniform, voxelTextureSizeSetter);
 	}
 
 	@Override

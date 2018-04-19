@@ -40,10 +40,18 @@ public class VoxelPlaneTools {
 							plane1.z2 = plane2.z2;
 							plane2.dispose();
 							ret = true;
+						} else if (plane1.z1 == plane2.z2) {
+							plane1.z1 = plane2.z1;
+							plane2.dispose();
+							ret = true;
 						}
 					} else if (plane1.z1 == plane2.z1 && plane1.z2 == plane2.z2) {
 						if (plane1.x2 == plane2.x1) {
 							plane1.x2 = plane2.x2;
+							plane2.dispose();
+							ret = true;
+						} else if (plane1.x1 == plane2.x2) {
+							plane1.x1 = plane2.x1;
 							plane2.dispose();
 							ret = true;
 						}
@@ -81,12 +89,24 @@ public class VoxelPlaneTools {
 	}
 
 	private static void mergePlanes (Array<VoxelFacePlane> planeList) {
-		while (mergeHorizontal(planeList)) {
-		}
-		while (mergeVertical(planeList)) {
-		}
+		int iterationCount = 0;
+		int lastCount = 0;
+		while (iterationCount < 2) {
+			while (mergeHorizontal(planeList)) {
+			}
 
-		planeList.shrink();
+			while (mergeVertical(planeList)) {
+			}
+
+			iterationCount++;
+			planeList.shrink();
+
+			if (iterationCount == 1 && lastCount > planeList.size) {
+				boolean b = true;
+			}
+
+			lastCount = planeList.size;
+		}
 	}
 
 	private static VoxelFacePlane createPlane (Direction direction) {
@@ -169,8 +189,8 @@ public class VoxelPlaneTools {
 	}
 
 	public static class PlaneHelper {
-		public Array<VoxelFacePlane> planeList = new Array<>();
-		public VoxelLevelChunk chunk;
+		public Array<VoxelFacePlane> planeList = new Array<>(true, 16, VoxelFacePlane.class);
+//		public VoxelLevelChunk chunk;
 		public VoxelFacePlane plane;
 		public int y = -1;
 
@@ -208,9 +228,6 @@ public class VoxelPlaneTools {
 		for (int x = 0; x < VoxelWorld.CHUNK_SIZE; ++x) {
 			for (int y = 0; y < VoxelWorld.CHUNK_SIZE; ++y) {
 				for (int z = 0; z < VoxelWorld.CHUNK_SIZE; ++z) {
-					if (x == 0 && z == 2 && direction == Direction.right) {
-						boolean b = true;
-					}
 					handlePlane(planeHelper, volume[x][y][z], direction, x, y, z);
 				}
 				planeHelper.reset();
@@ -320,22 +337,28 @@ public class VoxelPlaneTools {
 		throw new RuntimeException();
 	}
 
+	static Direction[] directions = new Direction[] { Direction.top, Direction.left, Direction.right, Direction.front,
+			Direction.back };
+
 	private static void determineVoxelPlaneFacesDirection (VoxelOctree voxelOctree, VoxelLevelChunk chunk,
 			VoxelLevelEntity[][][] volume) {
 		PlaneHelper[] planeHelpers = new PlaneHelper[5];
-		EnumSet.range(Direction.top, Direction.right).forEach(direction -> {
+		for (Direction direction : directions) {
 //			System.out.println("build planes dir: " + direction);
 			if (direction == Direction.bottom) return;
 
 			int directionIndex = getDirectionIndex(direction);
 			planeHelpers[directionIndex] = new PlaneHelper();
-			planeHelpers[directionIndex].chunk = chunk;
+//			planeHelpers[directionIndex].chunk = chunk;
 			determineVoxelPlanes(planeHelpers[directionIndex], volume, direction);
-		});
+		}
+
+		for (PlaneHelper planeHelper : planeHelpers) {
+			mergePlanes(planeHelper.planeList);
+		}
 
 		chunk.planeList.clear();
 		for (PlaneHelper planeHelper : planeHelpers) {
-			if (planeHelper == null) continue;
 			chunk.planeList.addAll(planeHelper.planeList);
 		}
 	}
@@ -343,7 +366,7 @@ public class VoxelPlaneTools {
 	public static void determineVoxelPlaneFaces (VoxelOctree voxelOctree, VoxelLevelChunk chunk,
 			VoxelLevelEntity[][][] volume) {
 		determineVoxelPlaneFacesDirection(voxelOctree, chunk, volume);
-		mergePlanes(chunk.planeList);
+//		mergePlanes(chunk.planeList);
 	}
 
 	public static VoxelFacePlane[] determineVoxelPlaneFacesFast (VoxelLevelChunk voxelLevelChunk,

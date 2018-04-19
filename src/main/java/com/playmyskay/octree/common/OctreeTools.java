@@ -63,10 +63,10 @@ public class OctreeTools {
 	}
 
 	public static <N extends OctreeNode<N>> void calculateBounds (int index, OctreeNode<N> parentNode,
-			BoundingBox out) {
+			OctreeCalc calc) {
 		Vector3 corner = OctreeTools.getCorner(index, parentNode.boundingBox());
-		Vector3 cnt = parentNode.boundingBox().getCenter(new Vector3());
-		out.set(corner, cnt);
+		Vector3 cnt = parentNode.boundingBox().getCenter(calc.vector());
+		calc.boundingBox().set(corner, cnt);
 	}
 
 	public static void adjustVector (Vector3 v) {
@@ -81,11 +81,11 @@ public class OctreeTools {
 		}
 	}
 
-	public static <N extends OctreeNode<N>> N contains (N currentNode, Vector3 v) {
+	public static <N extends OctreeNode<N>> N contains (N currentNode, Vector3 v, OctreeCalc calc) {
 		for (int index = 0; index < 8; index++) {
 			if (currentNode.childs() == null) continue;
 			if (currentNode.child(index) != null) {
-				if (currentNode.child(index).boundingBox().contains(v)) {
+				if (currentNode.child(index).boundingBox(calc).contains(v)) {
 					return currentNode.child(index);
 				}
 			}
@@ -123,7 +123,7 @@ public class OctreeTools {
 		return node.child(index);
 	}
 
-	public static <N extends OctreeNode<N>> boolean deleteChild (N node) {
+	public static <N extends OctreeNode<N>> boolean removeChild (N node) {
 		if (node.parent() == null) return false;
 		N parent = node.parent();
 		for (int i = 0; i < 8; ++i) {
@@ -142,6 +142,15 @@ public class OctreeTools {
 		while (node != null) {
 			node.update(updateNode, descriptor);
 			node = node.parent();
+		}
+	}
+
+	public static <N extends OctreeNode<N>> void removeNode (N currentNode) {
+		while (currentNode != null && currentNode.parent() != null) {
+			OctreeTools.removeChild(currentNode);
+			if (currentNode.parent().hasChilds()) return;
+
+			currentNode = currentNode.parent();
 		}
 	}
 }

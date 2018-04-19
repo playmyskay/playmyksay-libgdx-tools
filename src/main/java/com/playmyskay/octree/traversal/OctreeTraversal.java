@@ -5,18 +5,19 @@ import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.math.collision.BoundingBox;
 import com.badlogic.gdx.math.collision.Ray;
 import com.playmyskay.octree.common.Octree;
+import com.playmyskay.octree.common.OctreeCalc;
 import com.playmyskay.octree.common.OctreeNode;
 
 public class OctreeTraversal {
 
-	public static <N extends OctreeNode<N>> N next (N node, Vector3 v) {
-		if (!node.boundingBox().contains(v)) {
+	public static <N extends OctreeNode<N>> N next (N node, Vector3 v, OctreeCalc calc) {
+		if (!node.boundingBox(calc).contains(v)) {
 			return null;
 		}
 
 		for (int i = 0; i < 8; i++) {
 			if (node.child(i) == null) continue;
-			if (node.child(i).contains(v)) {
+			if (node.child(i).contains(v, calc)) {
 				return node.child(i);
 			}
 		}
@@ -24,9 +25,9 @@ public class OctreeTraversal {
 		return null;
 	}
 
-	public static <N extends OctreeNode<N>> N getFromNode (N node, int levelFrom, Vector3 v) {
+	public static <N extends OctreeNode<N>> N getFromNode (N node, int levelFrom, Vector3 v, OctreeCalc calc) {
 		for (int level = levelFrom; level > 0; --level) {
-			node = next(node, v);
+			node = next(node, v, calc);
 			if (node == null) {
 				return null;
 			}
@@ -35,10 +36,10 @@ public class OctreeTraversal {
 		return node;
 	}
 
-	public static <N extends OctreeNode<N>> N getFromRoot (Octree<N, ?> octree, Vector3 v) {
+	public static <N extends OctreeNode<N>> N getFromRoot (Octree<N, ?> octree, Vector3 v, OctreeCalc calc) {
 		N node = octree.rootNode;
 		for (int level = octree.curLevel; level > 0; --level) {
-			node = next(node, v);
+			node = next(node, v, calc);
 			if (node == null) {
 				return null;
 			}
@@ -47,16 +48,17 @@ public class OctreeTraversal {
 		return node;
 	}
 
-	public static <N extends OctreeNode<N>> void intersects (N node, Ray ray, int level, IntersectionRecorder<N> ir) {
+	public static <N extends OctreeNode<N>> void intersects (N node, Ray ray, int level, IntersectionRecorder<N> ir,
+			OctreeCalc calc) {
 		if (node == null) return;
 		if (ir.settings.maxLevel == level) return;
 		for (int i = 0; i < 8; i++) {
 			if (node.childs() == null) continue;
 			if (node.child(i) == null) continue;
-			if (Intersector.intersectRayBoundsFast(ray, node.child(i).boundingBox())) {
+			if (Intersector.intersectRayBoundsFast(ray, node.child(i).boundingBox(calc))) {
 				if (ir.settings().recordLevelSet.contains(level - 1)) {
 					Vector3 point = new Vector3();
-					if (Intersector.intersectRayBounds(ray, node.child(i).boundingBox(), point)) {
+					if (Intersector.intersectRayBounds(ray, node.child(i).boundingBox(calc), point)) {
 						if (!ir.settings().filter(node.child(i))) {
 							IntersectionData<N> id = new IntersectionData<>();
 							id.node = node.child(i);
@@ -65,7 +67,7 @@ public class OctreeTraversal {
 						}
 					}
 				} else {
-					intersects(node.child(i), ray, level - 1, ir);
+					intersects(node.child(i), ray, level - 1, ir, calc);
 				}
 			}
 		}
@@ -93,23 +95,24 @@ public class OctreeTraversal {
 	}
 
 	public static <N extends OctreeNode<N>> IntersectionRecorder<N> getIntersections (Octree<N, ?> octree, Ray ray,
-			OctreeTraversalSettings settings) {
+			OctreeTraversalSettings settings, OctreeCalc calc) {
 		if (octree == null || octree.rootNode == null) return null;
-		if (!Intersector.intersectRayBoundsFast(ray, octree.rootNode.boundingBox())) {
+		if (!Intersector.intersectRayBoundsFast(ray, octree.rootNode.boundingBox(calc))) {
 			return null;
 		}
 
 		IntersectionRecorder<N> ir = new IntersectionRecorder<N>();
 		ir.settings(settings);
-		intersects(octree.rootNode, ray, octree.curLevel, ir);
+		intersects(octree.rootNode, ray, octree.curLevel, ir, calc);
 
 		return ir;
 	}
 
-	public static <N extends OctreeNode<N>> IntersectionRecorder<N> getIntersections (Octree<N, ?> octree, Ray ray) {
+	public static <N extends OctreeNode<N>> IntersectionRecorder<N> getIntersections (Octree<N, ?> octree, Ray ray,
+			OctreeCalc calc) {
 		OctreeTraversalSettings settings = new OctreeTraversalSettings();
 		settings.recordLevelSet.add(0);
-		return getIntersections(octree, ray, settings);
+		return getIntersections(octree, ray, settings, calc);
 	}
 
 	public static <N extends OctreeNode<N>> IntersectionRecorder<N> getIntersections (Octree<N, ?> octree,
@@ -135,8 +138,8 @@ public class OctreeTraversal {
 	}
 
 	public static <N extends OctreeNode<N>> IntersectionData<N> getClosestIntersection (Octree<N, ?> octree, Ray ray,
-			OctreeTraversalSettings settings) {
-		IntersectionRecorder<N> ir = getIntersections(octree, ray, settings);
+			OctreeTraversalSettings settings, OctreeCalc calc) {
+		IntersectionRecorder<N> ir = getIntersections(octree, ray, settings, calc);
 		if (ir != null && !ir.intersections.isEmpty()) {
 			if (ir.intersections.size() == 1) {
 				return ir.intersections.get(0);
@@ -159,8 +162,8 @@ public class OctreeTraversal {
 	}
 
 	public static <N extends OctreeNode<N>> IntersectionData<N> getIntersectedNormal (Octree<N, ?> octree, Ray ray,
-			OctreeTraversalSettings settings) {
-		IntersectionData<N> entry = OctreeTraversal.getClosestIntersection(octree, ray, settings);
+			OctreeTraversalSettings settings, OctreeCalc calc) {
+		IntersectionData<N> entry = OctreeTraversal.getClosestIntersection(octree, ray, settings, calc);
 		if (entry == null) return null;
 		return entry;
 	}

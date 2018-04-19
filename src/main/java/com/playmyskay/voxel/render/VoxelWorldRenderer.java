@@ -5,31 +5,15 @@ import com.badlogic.gdx.graphics.g3d.Environment;
 import com.playmyskay.voxel.world.VoxelWorld;
 
 public class VoxelWorldRenderer {
-//	private float updateRenderablesTime = 0f;
 	private ChunkModelBatch chunkModelBatch = new ChunkModelBatch();
-	private RenderUpdateManager renderUpdateManager = new RenderUpdateManager(new RenderableUpdater(chunkModelBatch));
-	@SuppressWarnings("unused")
-	private WorldUpdateListener worldUpdateListener;
+	public RenderUpdateManager renderUpdateManager = new RenderUpdateManager(new RenderableUpdater(chunkModelBatch));
 	private Camera camera;
+	private VoxelWorld voxelWorld;
 
 	public VoxelWorldRenderer(VoxelWorld voxelWorld) {
+		this.voxelWorld = voxelWorld;
+		voxelWorld.chunkManager.addUpdateListener(renderUpdateManager);
 		voxelWorld.voxelOctree.addListener(new WorldUpdateListener(renderUpdateManager));
-
-		new Thread(new Runnable() {
-			private ChunkManager chunkManager = new ChunkManager(voxelWorld, renderUpdateManager);
-
-			@Override
-			public void run () {
-				while (true) {
-					try {
-						chunkManager.updateVisibleChunks();
-						Thread.sleep(500);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-				}
-			}
-		}).start();
 	}
 
 	public void camera (Camera camera) {
@@ -49,7 +33,7 @@ public class VoxelWorldRenderer {
 	}
 
 	public void render (float deltaTime) {
-//		updateRenderablesTime += deltaTime;
+		voxelWorld.update();
 
 		chunkModelBatch.begin(camera);
 		chunkModelBatch.render();

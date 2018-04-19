@@ -3,6 +3,7 @@ package com.playmyskay.voxel.level;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.math.collision.BoundingBox;
 import com.badlogic.gdx.utils.Array;
+import com.playmyskay.octree.common.OctreeCalc;
 import com.playmyskay.octree.common.OctreeNodeDescriptor;
 import com.playmyskay.octree.common.OctreeNodeDescriptor.BaseActionType;
 import com.playmyskay.octree.traversal.OctreeTraversal;
@@ -84,18 +85,19 @@ public class VoxelLevelChunk extends VoxelLevel {
 	}
 
 	private static VoxelLevelEntity getOffsetEntity (VoxelLevelChunk chunk, VoxelLevelEntity entity, int offsetX,
-			int offsetY, int offsetZ) {
-		Vector3 v = entity.boundingBox().getCenter(new Vector3()).add(offsetX, offsetY, offsetZ);
-		VoxelLevelEntity offsetEntity = (VoxelLevelEntity) OctreeTraversal.getFromNode(chunk, 4, v);
+			int offsetY, int offsetZ, OctreeCalc calc) {
+		Vector3 v = entity.boundingBox(calc).getCenter(calc.vector2()).add(offsetX, offsetY, offsetZ);
+		VoxelLevelEntity offsetEntity = (VoxelLevelEntity) OctreeTraversal.getFromNode(chunk, 4, v, calc);
 		return offsetEntity;
 	}
 
 	private static void rebuildFaces (VoxelLevelChunk chunk, VoxelLevelEntity[][][] volume) {
+		OctreeCalc calc = new OctreeCalc();
 		for (int x = 0; x < VoxelWorld.CHUNK_SIZE; ++x) {
 			for (int y = 0; y < VoxelWorld.CHUNK_SIZE; ++y) {
 				for (int z = 0; z < VoxelWorld.CHUNK_SIZE; ++z) {
 					if (volume[x][y][z] == null) continue;
-					determineFaces(chunk, volume[x][y][z]);
+					determineFaces(chunk, volume[x][y][z], calc);
 
 //				EnumSet.range(Direction.top, Direction.right).forEach(direction -> {
 //					if (entity.hasFace(direction)) {
@@ -120,8 +122,8 @@ public class VoxelLevelChunk extends VoxelLevel {
 	VoxelPosition tmpVoxelPosition = new VoxelPosition();
 
 	private static void determineFace (Direction direction, VoxelLevelChunk chunk, VoxelLevelEntity entity, int offsetX,
-			int offsetY, int offsetZ) {
-		VoxelLevelEntity offsetEntity = getOffsetEntity(chunk, entity, offsetX, offsetY, offsetZ);
+			int offsetY, int offsetZ, OctreeCalc calc) {
+		VoxelLevelEntity offsetEntity = getOffsetEntity(chunk, entity, offsetX, offsetY, offsetZ, calc);
 		if (offsetEntity == null) {
 			entity.addFace(direction);
 		} else {
@@ -135,14 +137,14 @@ public class VoxelLevelChunk extends VoxelLevel {
 
 	}
 
-	private static void determineFaces (VoxelLevelChunk chunk, VoxelLevelEntity entity) {
+	private static void determineFaces (VoxelLevelChunk chunk, VoxelLevelEntity entity, OctreeCalc calc) {
 		entity.faceBits = VoxelFace.getDirectionBit(Direction.none);
-		determineFace(Direction.left, chunk, entity, -1, 0, 0);
-		determineFace(Direction.right, chunk, entity, 1, 0, 0);
-		determineFace(Direction.top, chunk, entity, 0, 1, 0);
-		determineFace(Direction.bottom, chunk, entity, 0, -1, 0);
-		determineFace(Direction.front, chunk, entity, 0, 0, 1);
-		determineFace(Direction.back, chunk, entity, 0, 0, -1);
+		determineFace(Direction.left, chunk, entity, -1, 0, 0, calc);
+		determineFace(Direction.right, chunk, entity, 1, 0, 0, calc);
+		determineFace(Direction.top, chunk, entity, 0, 1, 0, calc);
+		determineFace(Direction.bottom, chunk, entity, 0, -1, 0, calc);
+		determineFace(Direction.front, chunk, entity, 0, 0, 1, calc);
+		determineFace(Direction.back, chunk, entity, 0, 0, -1, calc);
 	}
 
 }

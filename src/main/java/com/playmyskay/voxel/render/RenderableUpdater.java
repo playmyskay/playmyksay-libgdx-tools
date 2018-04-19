@@ -1,6 +1,6 @@
 package com.playmyskay.voxel.render;
 
-public class RenderableUpdater implements RenderableHandler {
+public class RenderableUpdater implements IRenderableHandler {
 	private ChunkModelBatch chunkModelBatch;
 
 	public RenderableUpdater(ChunkModelBatch chunkModelBatch) {
@@ -8,8 +8,9 @@ public class RenderableUpdater implements RenderableHandler {
 	}
 
 	@Override
-	public void update (ChunkRenderable chunkRenderable) {
-		chunkModelBatch.renderQueue().offer(chunkRenderable);
+	public void update (RenderUpdateData updateData) {
+		while (!chunkModelBatch.addUpdateData(updateData))
+			;
 	}
 
 }

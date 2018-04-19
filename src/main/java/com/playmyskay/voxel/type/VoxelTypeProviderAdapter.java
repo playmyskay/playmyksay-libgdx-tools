@@ -3,6 +3,7 @@ package com.playmyskay.voxel.type;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.VertexAttributes;
+import com.playmyskay.voxel.face.VoxelFacePlane;
 
 public abstract class VoxelTypeProviderAdapter implements IVoxelTypeProvider {
 
@@ -12,7 +13,7 @@ public abstract class VoxelTypeProviderAdapter implements IVoxelTypeProvider {
 	}
 
 	@Override
-	public float[] getExtendedVertices (VoxelTypeDescriptor descriptor) {
+	public float[] getExtendedVertices (VoxelFacePlane plane) {
 		return null;
 	}
 

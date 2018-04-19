@@ -1,15 +1,12 @@
 package com.playmyskay.voxel.render;
 
 import com.badlogic.gdx.graphics.Mesh;
-import com.badlogic.gdx.graphics.g3d.ModelCache.TightMeshPool;
 import com.badlogic.gdx.math.Vector3;
 import com.playmyskay.voxel.face.VoxelFacePlane;
 import com.playmyskay.voxel.level.VoxelLevelChunk;
 import com.playmyskay.voxel.world.VoxelWorld;
 
 public class ChunkMesher {
-	private static TightMeshPool meshPool = new TightMeshPool();
-
 	public final static int VERTEX_SIZE_MAX = VoxelWorld.CHUNK_DIM * 6 * 6;
 	public final static int INDEX_SIZE_MAX = Short.MAX_VALUE;
 
@@ -25,10 +22,10 @@ public class ChunkMesher {
 			RenderableData rd) {
 		Vector3 min = chunk.boundingBox().getMin(new Vector3());
 		rd.voxelOffset().set(min.x, min.y, min.z);
-		VoxelVerticesTools.createPlaneVertices(world, plane, rd.vertices(), rd.vertexCount(), rd.voxelOffset());
+		VoxelVerticesTools.createPlaneVertices(world, plane, rd.vertices(), rd.voxelOffset());
 
-		rd.vertexCount(rd.vertices().size);
-		rd.indexCount(rd.vertexCount() / 6 / 4 * 6);
+		rd.vertexCount(rd.vertices().size / 7);
+		rd.indexCount((rd.vertexCount() / 4) * 6);
 		rd.material(world.typeProvider().getMaterial());
 	}
 
@@ -43,14 +40,16 @@ public class ChunkMesher {
 
 	public static Mesh createMesh (VoxelWorld world, RenderableData rd) {
 		if (rd.vertexCount() > 0) {
-			Mesh mesh = meshPool.obtain(world.typeProvider().vertexAttributes(), rd.vertexCount(), rd.indexCount());
-
-			mesh.setVertices(rd.vertices().items, 0, rd.vertexCount());
-			mesh.setIndices(indices, 0, rd.indexCount());
-
+			Mesh mesh = new Mesh(true, rd.vertexCount() * 7, rd.indexCount(), world.typeProvider().vertexAttributes());
 			return mesh;
 		}
 		return null;
+	}
+
+	public static void setMeshdata (Mesh mesh, RenderableData rd) {
+		mesh.setVertices(rd.vertices().items, 0, rd.vertices().items.length);
+		mesh.setIndices(indices, 0, rd.indexCount());
+		mesh.setAutoBind(false);
 	}
 
 	//RenderInfoSystem.getInstance().setVoxelVerticesCount(totalVertexCount / 6);

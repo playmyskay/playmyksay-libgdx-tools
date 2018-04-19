@@ -6,6 +6,7 @@ import com.playmyskay.voxel.level.VoxelLevel;
 import com.playmyskay.voxel.level.VoxelLevelChunk;
 import com.playmyskay.voxel.level.VoxelLevelEntity;
 import com.playmyskay.voxel.level.VoxelLevelTools;
+import com.playmyskay.voxel.world.UpdateData;
 
 public class WorldUpdateListener extends VoxelOctreeListener {
 

@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.badlogic.gdx.math.Vector3;
-import com.badlogic.gdx.math.collision.BoundingBox;
 import com.playmyskay.octree.common.IOctreeListener.NodeUpdateData;
 import com.playmyskay.octree.common.OctreeNodeDescriptor.BaseActionType;
 
@@ -95,14 +94,14 @@ public class Octree<N extends OctreeNode<N>, D extends OctreeNodeDescriptor> {
 		return true;
 	}
 
-	public N setNode (Vector3 v, D descriptor) {
+	public synchronized N setNode (Vector3 v, D descriptor) {
 		OctreeTools.adjustVector(v);
 
 		if (!expandRootNode(v, descriptor)) {
 			return null;
 		}
 
-		N updateNode = processDescriptor(v, descriptor);
+		N updateNode = processDescriptor(v, descriptor, new OctreeCalc());
 		OctreeTools.updateNode(updateNode, descriptor);
 
 		updateListeners(updateNode, descriptor);
@@ -119,46 +118,44 @@ public class Octree<N extends OctreeNode<N>, D extends OctreeNodeDescriptor> {
 		}
 	}
 
-	private N processDescriptor (Vector3 v, D descriptor) {
+	private synchronized N processDescriptor (Vector3 v, D descriptor, OctreeCalc calc) {
 		switch (descriptor.getBaseActionType()) {
 		case add:
-			return OctreeNodeTools.addNodeByVector(nodeProvider, rootNode, v, descriptor, tmpBoundingBox);
+			return OctreeNodeTools.addNodeByVector(nodeProvider, rootNode, v, descriptor, calc);
 		case remove:
-			return removeNode(v, descriptor);
+			return removeNode(v, descriptor, calc);
 		default:
 			throw new RuntimeException("Unknown Type " + descriptor.getBaseActionType().toString());
 		}
 	}
 
-	private BoundingBox tmpBoundingBox = new BoundingBox();
-
-	public N addNode (N node, D descriptor) {
-		tmpBoundingBox.set(node.boundingBox());
+	public N addNode (N node, D descriptor, OctreeCalc calc) {
+		calc.boundingBox().set(node.boundingBox());
 		if (descriptor.getBaseActionType() == BaseActionType.add) {
 			Vector3 corner = new Vector3();
-			expandRootNode(tmpBoundingBox.getCorner000(corner), descriptor);
-			expandRootNode(tmpBoundingBox.getCorner100(corner), descriptor);
-			expandRootNode(tmpBoundingBox.getCorner001(corner), descriptor);
-			expandRootNode(tmpBoundingBox.getCorner101(corner), descriptor);
-			expandRootNode(tmpBoundingBox.getCorner010(corner), descriptor);
-			expandRootNode(tmpBoundingBox.getCorner110(corner), descriptor);
-			expandRootNode(tmpBoundingBox.getCorner011(corner), descriptor);
-			expandRootNode(tmpBoundingBox.getCorner111(corner), descriptor);
+			expandRootNode(calc.boundingBox().getCorner000(corner), descriptor);
+			expandRootNode(calc.boundingBox().getCorner100(corner), descriptor);
+			expandRootNode(calc.boundingBox().getCorner001(corner), descriptor);
+			expandRootNode(calc.boundingBox().getCorner101(corner), descriptor);
+			expandRootNode(calc.boundingBox().getCorner010(corner), descriptor);
+			expandRootNode(calc.boundingBox().getCorner110(corner), descriptor);
+			expandRootNode(calc.boundingBox().getCorner011(corner), descriptor);
+			expandRootNode(calc.boundingBox().getCorner111(corner), descriptor);
 
-			return OctreeNodeTools.addNodeByBoundingBox(this, node, descriptor, tmpBoundingBox);
+			return OctreeNodeTools.addNodeByBoundingBox(this, node, descriptor, calc);
 		}
 
 		return null;
 	}
 
-	public N removeNode (Vector3 v, D descriptor) {
+	public N removeNode (Vector3 v, D descriptor, OctreeCalc calc) {
 		OctreeTools.adjustVector(v);
 
 		N lastNode = null;
 		N currentNode = rootNode;
 		for (int level = curLevel; level > 0 && currentNode != null; --level) {
 			lastNode = currentNode;
-			currentNode = OctreeTools.contains(currentNode, v);
+			currentNode = OctreeTools.contains(currentNode, v, calc);
 		}
 
 		if (currentNode == null && lastNode != null) {
@@ -167,13 +164,7 @@ public class Octree<N extends OctreeNode<N>, D extends OctreeNodeDescriptor> {
 
 		lastNode = currentNode;
 
-		while (currentNode != null && currentNode.parent() != null) {
-			OctreeTools.deleteChild(currentNode);
-			if (currentNode.parent().hasChilds()) break;
-
-			currentNode = currentNode.parent();
-		}
-
+		OctreeTools.removeNode(currentNode);
 		return lastNode;
 	}
 

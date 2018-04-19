@@ -5,7 +5,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 public class JobProcessor {
-	private static ExecutorService service = Executors.newFixedThreadPool(8);
+	private static ExecutorService service = Executors.newFixedThreadPool(3);
 
 	public static Future<?> add (Runnable runnable) {
 		return service.submit(runnable);
