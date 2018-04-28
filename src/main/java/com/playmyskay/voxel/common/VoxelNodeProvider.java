@@ -3,23 +3,20 @@ package com.playmyskay.voxel.common;
 import com.playmyskay.octree.common.IOctreeNodeProvider;
 import com.playmyskay.voxel.level.VoxelLevel;
 import com.playmyskay.voxel.level.VoxelLevelChunk;
-import com.playmyskay.voxel.level.VoxelLevelChunkSpace;
 import com.playmyskay.voxel.level.VoxelLevelEntity;
-import com.playmyskay.voxel.level.VoxelLevelSpace;
+import com.playmyskay.voxel.level.VoxelLevelPoolManager;
+import com.playmyskay.voxel.world.VoxelWorld;
 
 public class VoxelNodeProvider implements IOctreeNodeProvider<VoxelLevel> {
-	private VoxelOctree voxelOctree;
+	private VoxelLevelPoolManager poolManager;
 
-	public VoxelNodeProvider(VoxelOctree voxelOctree) {
-		this.voxelOctree = voxelOctree;
+	public VoxelNodeProvider(VoxelWorld world) {
+		poolManager = new VoxelLevelPoolManager(world);
 	}
 
 	@Override
 	public VoxelLevel create (int level) {
-		if (level == 0) return new VoxelLevelEntity();
-		if (level == 4) return new VoxelLevelChunk();
-		if (level > 0 && level < 4) return new VoxelLevelChunkSpace();
-		return new VoxelLevelSpace();
+		return poolManager.obtain(level);
 	}
 
 	@Override
@@ -32,6 +29,10 @@ public class VoxelNodeProvider implements IOctreeNodeProvider<VoxelLevel> {
 		if (clazz.equals(VoxelLevelEntity.class)) return 0;
 		if (clazz.equals(VoxelLevelChunk.class)) return 4;
 		return -1;
+	}
+
+	public void free (VoxelLevel node) {
+		poolManager.free(node);
 	}
 
 }

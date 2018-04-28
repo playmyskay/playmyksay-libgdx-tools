@@ -19,8 +19,8 @@ public class ChunkMesher {
 	}
 
 	public static void calculatePlaneMeshData (VoxelWorld world, VoxelLevelChunk chunk, VoxelFacePlane plane,
-			RenderableData rd) {
-		Vector3 min = chunk.boundingBox().getMin(new Vector3());
+			RenderableData rd, Vector3 tmpVector) {
+		Vector3 min = chunk.boundingBox().getMin(tmpVector);
 		rd.voxelOffset().set(min.x, min.y, min.z);
 		VoxelVerticesTools.createPlaneVertices(world, plane, rd.vertices(), rd.voxelOffset());
 
@@ -31,9 +31,11 @@ public class ChunkMesher {
 
 	public static void calculateChunkMeshData (VoxelWorld world, VoxelLevelChunk chunk, RenderableData rd) {
 		rd.vertexCount(0);
+
+		Vector3 tmpVector = new Vector3();
 		for (VoxelFacePlane plane : chunk.planeList) {
 //			Direction direction = VoxelFace.getDirection(plane.faceBits);
-			calculatePlaneMeshData(world, chunk, plane, rd);
+			calculatePlaneMeshData(world, chunk, plane, rd, tmpVector);
 		}
 		rd.vertices().shrink();
 	}

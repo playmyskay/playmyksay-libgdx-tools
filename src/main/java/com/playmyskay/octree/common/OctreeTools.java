@@ -4,8 +4,7 @@ import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.math.collision.BoundingBox;
 
 public class OctreeTools {
-	public static Vector3 getCorner (int index, BoundingBox boundingBox) {
-		Vector3 corner = new Vector3();
+	public static Vector3 getCorner (int index, BoundingBox boundingBox, Vector3 corner) {
 		switch (index) {
 		case 0:
 			return boundingBox.getCorner000(corner);
@@ -27,15 +26,15 @@ public class OctreeTools {
 		return null;
 	}
 
-	public static void getConers (Vector3[] corners, BoundingBox boundingBox) {
-		corners[0] = getCorner(0, boundingBox);
-		corners[1] = getCorner(1, boundingBox);
-		corners[2] = getCorner(2, boundingBox);
-		corners[3] = getCorner(3, boundingBox);
-		corners[4] = getCorner(4, boundingBox);
-		corners[5] = getCorner(5, boundingBox);
-		corners[6] = getCorner(6, boundingBox);
-		corners[7] = getCorner(7, boundingBox);
+	public static void getConers (Vector3[] corners, BoundingBox boundingBox, OctreeCalc calc) {
+		corners[0] = getCorner(0, boundingBox, calc.vector());
+		corners[1] = getCorner(1, boundingBox, calc.vector());
+		corners[2] = getCorner(2, boundingBox, calc.vector());
+		corners[3] = getCorner(3, boundingBox, calc.vector());
+		corners[4] = getCorner(4, boundingBox, calc.vector());
+		corners[5] = getCorner(5, boundingBox, calc.vector());
+		corners[6] = getCorner(6, boundingBox, calc.vector());
+		corners[7] = getCorner(7, boundingBox, calc.vector());
 	}
 
 	public static void getDistances (Vector3 v, Vector3[] corners, float[] dst2) {
@@ -49,8 +48,9 @@ public class OctreeTools {
 		dst2[7] = corners[7].dst2(v);
 	}
 
-	public static int getNearestIndex (BoundingBox boundingBox, Vector3 v, Vector3[] corners, float[] dst2) {
-		OctreeTools.getConers(corners, boundingBox);
+	public static int getNearestIndex (BoundingBox boundingBox, Vector3 v, Vector3[] corners, float[] dst2,
+			OctreeCalc calc) {
+		OctreeTools.getConers(corners, boundingBox, calc);
 		OctreeTools.getDistances(v, corners, dst2);
 
 		int near = 0;
@@ -62,11 +62,11 @@ public class OctreeTools {
 		return near;
 	}
 
-	public static <N extends OctreeNode<N>> void calculateBounds (int index, OctreeNode<N> parentNode,
-			OctreeCalc calc) {
-		Vector3 corner = OctreeTools.getCorner(index, parentNode.boundingBox());
-		Vector3 cnt = parentNode.boundingBox().getCenter(calc.vector());
-		calc.boundingBox().set(corner, cnt);
+	public static <N extends OctreeNode<N>> void calculateBounds (BoundingBox boundingBox, int index,
+			OctreeNode<N> parentNode, Vector3 corner, Vector3 cnt, OctreeCalc calc) {
+		OctreeTools.getCorner(index, parentNode.boundingBox(calc), corner);
+		parentNode.boundingBox(calc).getCenter(cnt);
+		boundingBox.set(corner, cnt);
 	}
 
 	public static void adjustVector (Vector3 v) {
@@ -89,6 +89,7 @@ public class OctreeTools {
 					return currentNode.child(index);
 				}
 			}
+			calc.reset();
 		}
 		return null;
 	}
@@ -117,7 +118,7 @@ public class OctreeTools {
 				node.child(index).boundingBox().set(boundingBox);
 			}
 			node.child(index).childs(nodeProvider.createArray(level - 1, 8));
-			node.child(index).descriptor(descriptor);
+			if (descriptor != null) node.child(index).descriptor(descriptor);
 			return node.child(index);
 		}
 		return node.child(index);
@@ -145,9 +146,14 @@ public class OctreeTools {
 		}
 	}
 
-	public static <N extends OctreeNode<N>> void removeNode (N currentNode) {
+	public static interface INodeHandler<N extends OctreeNode<N>> {
+		public void process (N node);
+	}
+
+	public static <N extends OctreeNode<N>> void removeNode (N currentNode, INodeHandler<N> nodeHandler) {
 		while (currentNode != null && currentNode.parent() != null) {
 			OctreeTools.removeChild(currentNode);
+			if (nodeHandler != null) nodeHandler.process(currentNode);
 			if (currentNode.parent().hasChilds()) return;
 
 			currentNode = currentNode.parent();

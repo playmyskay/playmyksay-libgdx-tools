@@ -21,4 +21,9 @@ public class SetNodePointsAction extends Action {
 		return ActionResult.OK;
 	}
 
+	@Override
+	public void dispose () {
+
+	}
+
 }

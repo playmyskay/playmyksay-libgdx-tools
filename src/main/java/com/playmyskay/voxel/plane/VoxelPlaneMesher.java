@@ -1,6 +1,8 @@
-package com.playmyskay.voxel.face;
+package com.playmyskay.voxel.plane;
 
 import com.playmyskay.voxel.common.VoxelOffset;
+import com.playmyskay.voxel.face.VoxelFace;
+import com.playmyskay.voxel.face.VoxelFacePlane;
 import com.playmyskay.voxel.face.VoxelFace.Direction;
 
 public class VoxelPlaneMesher {

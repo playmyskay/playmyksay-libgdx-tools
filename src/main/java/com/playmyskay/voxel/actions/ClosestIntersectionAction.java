@@ -1,6 +1,7 @@
 package com.playmyskay.voxel.actions;
 
 import com.playmyskay.octree.common.OctreeCalc;
+import com.playmyskay.octree.common.OctreeCalcPoolManager;
 import com.playmyskay.octree.traversal.IntersectionData;
 import com.playmyskay.octree.traversal.OctreeTraversal;
 import com.playmyskay.voxel.actions.common.Action;
@@ -15,7 +16,7 @@ import com.playmyskay.voxel.level.VoxelLevel;
 
 public class ClosestIntersectionAction extends Action {
 	private VoxelLevelFilter filter;
-	private OctreeCalc calc = new OctreeCalc();
+	private OctreeCalc calc = OctreeCalcPoolManager.obtain();
 
 	public ClosestIntersectionAction() {
 	}
@@ -30,6 +31,8 @@ public class ClosestIntersectionAction extends Action {
 		actionData.settings().recordLevelSet.add(0);
 		actionData.settings().filter = filter;
 
+		calc.reset();
+		calc.octree(actionData.octree());
 		IntersectionData<VoxelLevel> intersectionData = OctreeTraversal.getClosestIntersection(actionData.octree(),
 				actionData.ray(), actionData.settings(), calc);
 		if (intersectionData == null) return ActionResult.CONTINUE;
@@ -38,5 +41,10 @@ public class ClosestIntersectionAction extends Action {
 		actionData.intersectionDataList().add(intersectionData);
 
 		return ActionResult.OK;
+	}
+
+	@Override
+	public void dispose () {
+		OctreeCalcPoolManager.free(calc);
 	}
 }

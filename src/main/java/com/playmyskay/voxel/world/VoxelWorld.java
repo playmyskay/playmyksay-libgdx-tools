@@ -5,6 +5,7 @@ import java.util.concurrent.Future;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.math.collision.BoundingBox;
+import com.playmyskay.voxel.common.VoxelNodeProvider;
 import com.playmyskay.voxel.common.VoxelOctree;
 import com.playmyskay.voxel.common.VoxelOctreeProvider;
 import com.playmyskay.voxel.common.descriptors.VoxelDescriptor;
@@ -14,9 +15,9 @@ import com.playmyskay.voxel.type.IVoxelTypeProvider;
 
 public class VoxelWorld {
 
-	public VoxelOctree voxelOctree = new VoxelOctree();
+	public VoxelOctree voxelOctree;
 	public ChunkManager chunkManager = new ChunkManager(this);
-	public VoxelWorldRenderer worldRenderer = new VoxelWorldRenderer(this);
+	public VoxelWorldRenderer worldRenderer;
 	public Vector3 viewerPosition = new Vector3();
 	public BoundingBox visibilityBoundingBox = new BoundingBox(new Vector3(0f, 0f, 0f), new Vector3(128f, 128f, 128f));
 	public BoundingBox cachingBoundingBox = new BoundingBox(new Vector3(0f, 0f, 0f), new Vector3(1024f, 1024f, 1024f));
@@ -75,12 +76,12 @@ public class VoxelWorld {
 	public float update_tick = 0.5f;
 	public IVoxelWorldProvider worldProvider;
 	public IVoxelTypeProvider typeProvider;
-	public int visible_chunk_width = 4;
+	public int visible_chunk_width = 32;
 	public int visible_chunk_height = 4;
-	public int visible_chunk_depth = 4;
-	public int cached_chunk_width = 8;
+	public int visible_chunk_depth = 32;
+	public int cached_chunk_width = 32;
 	public int cached_chunk_height = 4;
-	public int cached_chunk_depth = 8;
+	public int cached_chunk_depth = 32;
 
 	public static int CHUNK_SIZE = 16;
 	public static int CHUNK_DIM = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
@@ -92,7 +93,8 @@ public class VoxelWorld {
 	private VoxelWorld(IVoxelWorldProvider worldProvider, IVoxelTypeProvider typeProvider) {
 		this.worldProvider = worldProvider;
 		this.typeProvider = typeProvider;
-
+		this.voxelOctree = new VoxelOctree(new VoxelNodeProvider(this));
+		this.worldRenderer = new VoxelWorldRenderer(this);
 		this.updateRunnable = new UpdateRunnable();
 
 		VoxelOctreeProvider.set(voxelOctree);
@@ -123,15 +125,18 @@ public class VoxelWorld {
 		updateDeltaAccu += Gdx.graphics.getDeltaTime();
 		if (updateDeltaAccu >= update_tick) {
 			// only one update thread should be running
-			if (updateFuture != null) {
-				if (updateFuture.isDone()) {
-					updateFuture = null;
+			if (updateRunnable.needUpdate()) {
+				if (updateFuture != null) {
+					if (updateFuture.isDone()) {
+						updateFuture = null;
+					}
+				}
+				if (updateFuture == null) {
+					updateFuture = JobProcessor.add(updateRunnable);
+					updateDeltaAccu = 0f;
 				}
 			}
-			if (updateFuture == null && updateRunnable.needUpdate()) {
-				updateFuture = JobProcessor.add(updateRunnable);
-				updateDeltaAccu = 0f;
-			}
+
 		}
 	}
 

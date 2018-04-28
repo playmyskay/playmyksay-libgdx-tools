@@ -1,4 +1,4 @@
-package com.playmyskay.voxel.face;
+package com.playmyskay.voxel.plane;
 
 import java.io.IOException;
 import java.util.EnumSet;
@@ -7,6 +7,8 @@ import java.util.Iterator;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
 import com.playmyskay.voxel.common.VoxelOctree;
+import com.playmyskay.voxel.face.VoxelFace;
+import com.playmyskay.voxel.face.VoxelFacePlane;
 import com.playmyskay.voxel.face.VoxelFace.Direction;
 import com.playmyskay.voxel.level.VoxelLevel;
 import com.playmyskay.voxel.level.VoxelLevelChunk;
@@ -34,6 +36,7 @@ public class VoxelPlaneTools {
 				if (plane1.isDisposed() || plane2.isDisposed()) continue;
 				if (plane1 == plane2) continue;
 				if (plane1.faceBits != plane2.faceBits) continue;
+				if (plane1.descriptor != plane2.descriptor) continue;
 				if (plane1.y1 == plane2.y1 && plane1.y2 == plane2.y2) {
 					if (plane1.x1 == plane2.x1 && plane1.x2 == plane2.x2) {
 						if (plane1.z2 == plane2.z1) {
@@ -72,6 +75,7 @@ public class VoxelPlaneTools {
 				if (plane1.isDisposed() || plane2.isDisposed()) continue;
 				if (plane1 == plane2) continue;
 				if (plane1.faceBits != plane2.faceBits) continue;
+				if (plane1.descriptor != plane2.descriptor) continue;
 				if (plane1.x1 == plane2.x1 && plane1.x2 == plane2.x2) {
 					if (plane1.z1 == plane2.z1 && plane1.z2 == plane2.z2) {
 						if (plane1.y2 == plane2.y1) {
@@ -89,24 +93,13 @@ public class VoxelPlaneTools {
 	}
 
 	private static void mergePlanes (Array<VoxelFacePlane> planeList) {
-		int iterationCount = 0;
-		int lastCount = 0;
-		while (iterationCount < 2) {
-			while (mergeHorizontal(planeList)) {
-			}
-
-			while (mergeVertical(planeList)) {
-			}
-
-			iterationCount++;
-			planeList.shrink();
-
-			if (iterationCount == 1 && lastCount > planeList.size) {
-				boolean b = true;
-			}
-
-			lastCount = planeList.size;
+		while (mergeHorizontal(planeList)) {
 		}
+
+		while (mergeVertical(planeList)) {
+		}
+
+		planeList.shrink();
 	}
 
 	private static VoxelFacePlane createPlane (Direction direction) {

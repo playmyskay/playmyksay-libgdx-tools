@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.math.collision.BoundingBox;
 import com.playmyskay.octree.common.IOctreeListener.NodeUpdateData;
 import com.playmyskay.octree.common.OctreeNodeDescriptor.BaseActionType;
 
@@ -16,6 +17,7 @@ public class Octree<N extends OctreeNode<N>, D extends OctreeNodeDescriptor> {
 	private float[] dst2 = new float[8];
 	private Vector3 tmp = new Vector3();
 	private List<IOctreeListener<N, D>> octreeListenerList = new ArrayList<>();
+	private OctreeCalc calc = OctreeCalcPoolManager.obtain();
 
 	public Octree() {
 		for (int i = 0; i < 8; i++) {
@@ -50,8 +52,8 @@ public class Octree<N extends OctreeNode<N>, D extends OctreeNodeDescriptor> {
 	private Vector3 min = new Vector3();
 	private Vector3 max = new Vector3();
 
-	private boolean expandRootNode (Vector3 v, D descriptor) {
-		if (descriptor.getBaseActionType() == BaseActionType.remove) {
+	private boolean expandRootNode (Vector3 v, BaseActionType baseActionType) {
+		if (baseActionType == BaseActionType.remove) {
 			return false;
 		}
 
@@ -64,7 +66,8 @@ public class Octree<N extends OctreeNode<N>, D extends OctreeNodeDescriptor> {
 		}
 
 		while (needRootExpansion(v)) {
-			int near = OctreeTools.getNearestIndex(rootNode.boundingBox(), v, corners, dst2);
+			calc.reset();
+			int near = OctreeTools.getNearestIndex(rootNode.boundingBox(), v, corners, dst2, calc);
 			int far = 7 - near;
 
 			// min is the farthest corner of vector v
@@ -97,7 +100,7 @@ public class Octree<N extends OctreeNode<N>, D extends OctreeNodeDescriptor> {
 	public synchronized N setNode (Vector3 v, D descriptor) {
 		OctreeTools.adjustVector(v);
 
-		if (!expandRootNode(v, descriptor)) {
+		if (!expandRootNode(v, descriptor.getBaseActionType())) {
 			return null;
 		}
 
@@ -129,20 +132,21 @@ public class Octree<N extends OctreeNode<N>, D extends OctreeNodeDescriptor> {
 		}
 	}
 
-	public N addNode (N node, D descriptor, OctreeCalc calc) {
-		calc.boundingBox().set(node.boundingBox());
-		if (descriptor.getBaseActionType() == BaseActionType.add) {
-			Vector3 corner = new Vector3();
-			expandRootNode(calc.boundingBox().getCorner000(corner), descriptor);
-			expandRootNode(calc.boundingBox().getCorner100(corner), descriptor);
-			expandRootNode(calc.boundingBox().getCorner001(corner), descriptor);
-			expandRootNode(calc.boundingBox().getCorner101(corner), descriptor);
-			expandRootNode(calc.boundingBox().getCorner010(corner), descriptor);
-			expandRootNode(calc.boundingBox().getCorner110(corner), descriptor);
-			expandRootNode(calc.boundingBox().getCorner011(corner), descriptor);
-			expandRootNode(calc.boundingBox().getCorner111(corner), descriptor);
+	public synchronized N addNode (N node, BaseActionType baseActionType, OctreeCalc calc) {
+		BoundingBox boundingBox = calc.boundingBox();
+		boundingBox.set(node.boundingBox());
+		if (baseActionType == BaseActionType.add) {
+			Vector3 corner = calc.vector();
+			expandRootNode(boundingBox.getCorner000(corner), baseActionType);
+			expandRootNode(boundingBox.getCorner100(corner), baseActionType);
+			expandRootNode(boundingBox.getCorner001(corner), baseActionType);
+			expandRootNode(boundingBox.getCorner101(corner), baseActionType);
+			expandRootNode(boundingBox.getCorner010(corner), baseActionType);
+			expandRootNode(boundingBox.getCorner110(corner), baseActionType);
+			expandRootNode(boundingBox.getCorner011(corner), baseActionType);
+			expandRootNode(boundingBox.getCorner111(corner), baseActionType);
 
-			return OctreeNodeTools.addNodeByBoundingBox(this, node, descriptor, calc);
+			return OctreeNodeTools.addNodeByBoundingBox(this, node, null, calc);
 		}
 
 		return null;
@@ -164,7 +168,7 @@ public class Octree<N extends OctreeNode<N>, D extends OctreeNodeDescriptor> {
 
 		lastNode = currentNode;
 
-		OctreeTools.removeNode(currentNode);
+		OctreeTools.removeNode(currentNode, null);
 		return lastNode;
 	}
 

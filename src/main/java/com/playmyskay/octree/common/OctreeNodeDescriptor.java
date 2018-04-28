@@ -18,5 +18,4 @@ public class OctreeNodeDescriptor {
 	public BaseActionType getBaseActionType () {
 		return this.baseActionType;
 	}
-
 }

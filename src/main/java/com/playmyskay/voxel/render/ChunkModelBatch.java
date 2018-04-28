@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Mesh;
@@ -99,7 +100,7 @@ public class ChunkModelBatch extends ModelBatch implements RenderableProvider {
 //	public ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 	private RenderablePool renderablePool = new RenderablePool();
 	private ModelCache modelCache = new ModelCache();
-	private boolean useModelCache = false;
+	private boolean useModelCache = true;
 	private MeshPool meshPool = new MeshPool();
 
 	public ChunkModelBatch() {
@@ -210,9 +211,10 @@ public class ChunkModelBatch extends ModelBatch implements RenderableProvider {
 	private long time_start = 0;
 	private long time_delta = 0;
 	private long time_highest = 0;
+	private float updateAccu = 0f;
 
-	private void processQueue (ConcurrentLinkedQueue<RenderUpdateData> queue) {
-		while (/*time_delta < MAX_UPDATE_TIME_NS && */ !queue.isEmpty()) {
+	private void processQueue (ConcurrentLinkedQueue<RenderUpdateData> queue, boolean processAllFlag) {
+		while (/*time_delta < MAX_UPDATE_TIME_NS && */ (processAllFlag || updateCount < 8) && !queue.isEmpty()) {
 			RenderUpdateData ud = queue.poll();
 			switch (ud.type) {
 			case addChunk:
@@ -236,17 +238,18 @@ public class ChunkModelBatch extends ModelBatch implements RenderableProvider {
 	public void render () {
 		if (!renderEnabled) return;
 
+		updateAccu += Gdx.graphics.getDeltaTime();
+		if (updateAccu < 0.5f) return;
+		updateAccu = 0;
+
 		updateCount = 0;
 		time_delta = 0;
 		time_start = System.nanoTime();
 
 		boolean updateModelCache = useModelCache && (!addQueue.isEmpty() || !removeQueue.isEmpty());
-		if (updateModelCache) {
-			modelCache.begin(getCamera());
-		}
 
-		processQueue(removeQueue);
-		processQueue(addQueue);
+		processQueue(removeQueue, true);
+		processQueue(addQueue, true);
 
 		if (time_highest > 800000) {
 			time_highest = 0;
@@ -262,6 +265,7 @@ public class ChunkModelBatch extends ModelBatch implements RenderableProvider {
 //				(System.nanoTime() - time_start) / 1000, time_highest / 1000));
 
 		if (updateModelCache) {
+			modelCache.begin(camera);
 			modelCache.add(this);
 			modelCache.end();
 		}
@@ -276,6 +280,9 @@ public class ChunkModelBatch extends ModelBatch implements RenderableProvider {
 			if (updateCount > 0) {
 				renderablesArray.clear();
 				modelCache.getRenderables(renderablesArray, null);
+				for (Renderable r : renderablesArray) {
+					r.environment = environment;
+				}
 			}
 		} else {
 			if (renderablesArray != renderables) renderablesArray = renderables;
@@ -324,7 +331,7 @@ public class ChunkModelBatch extends ModelBatch implements RenderableProvider {
 	}
 
 	public int updateQueueSize () {
-		return addQueue.size();
+		return addQueue.size() + removeQueue.size();
 	}
 
 	@Override

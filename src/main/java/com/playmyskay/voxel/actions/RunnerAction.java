@@ -41,4 +41,9 @@ public class RunnerAction extends Action {
 
 		return ActionResult.OK;
 	}
+
+	@Override
+	public void dispose () {
+
+	}
 }

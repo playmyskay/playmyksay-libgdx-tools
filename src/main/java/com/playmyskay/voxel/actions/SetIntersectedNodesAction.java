@@ -24,4 +24,9 @@ public class SetIntersectedNodesAction extends Action {
 		return ActionResult.OK;
 	}
 
+	@Override
+	public void dispose () {
+
+	}
+
 }

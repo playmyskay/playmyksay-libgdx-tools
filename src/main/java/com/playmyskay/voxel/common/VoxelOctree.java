@@ -6,8 +6,8 @@ import com.playmyskay.voxel.level.VoxelLevel;
 
 public class VoxelOctree extends Octree<VoxelLevel, VoxelDescriptor> {
 
-	public VoxelOctree() {
-		setNodeProvider(new VoxelNodeProvider(this));
+	public VoxelOctree(VoxelNodeProvider provider) {
+		setNodeProvider(provider);
 	}
 
 }

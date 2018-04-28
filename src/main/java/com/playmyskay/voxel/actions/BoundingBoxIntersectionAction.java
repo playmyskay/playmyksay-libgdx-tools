@@ -36,4 +36,9 @@ public class BoundingBoxIntersectionAction extends Action {
 		return ActionResult.OK;
 	}
 
+	@Override
+	public void dispose () {
+
+	}
+
 }

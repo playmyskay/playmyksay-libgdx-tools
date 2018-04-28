@@ -24,4 +24,8 @@ public class RemoveNodesAction extends Action {
 		return ActionResult.OK;
 	}
 
+	@Override
+	public void dispose () {
+	}
+
 }

@@ -11,6 +11,7 @@ import com.playmyskay.octree.common.OctreeNode;
 public class OctreeTraversal {
 
 	public static <N extends OctreeNode<N>> N next (N node, Vector3 v, OctreeCalc calc) {
+		calc = calc.child();
 		if (!node.boundingBox(calc).contains(v)) {
 			return null;
 		}
@@ -20,6 +21,7 @@ public class OctreeTraversal {
 			if (node.child(i).contains(v, calc)) {
 				return node.child(i);
 			}
+			calc.reset();
 		}
 
 		return null;
@@ -52,6 +54,8 @@ public class OctreeTraversal {
 			OctreeCalc calc) {
 		if (node == null) return;
 		if (ir.settings.maxLevel == level) return;
+		if (node.leaf()) return;
+		calc.reset();
 		for (int i = 0; i < 8; i++) {
 			if (node.childs() == null) continue;
 			if (node.child(i) == null) continue;
@@ -70,6 +74,7 @@ public class OctreeTraversal {
 					intersects(node.child(i), ray, level - 1, ir, calc);
 				}
 			}
+			calc.reset();
 		}
 	}
 

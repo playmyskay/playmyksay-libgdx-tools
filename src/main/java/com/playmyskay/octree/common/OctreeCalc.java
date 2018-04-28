@@ -5,21 +5,60 @@ import com.badlogic.gdx.math.collision.BoundingBox;
 import com.badlogic.gdx.utils.Array;
 
 public class OctreeCalc {
-	private Vector3 vector = new Vector3();
-	private Vector3 vector2 = new Vector3();
-	private BoundingBox boundingBox = new BoundingBox();
+
+	private Octree<?, ?> octree;
+	private int vectorIndex = 0;
+	private int boundingBoxIndex = 0;
+	private Vector3[] vectors = new Vector3[16];
+	private BoundingBox[] boundingBoxs = new BoundingBox[8];
 	private Array<OctreeNode<?>> nodeArray;
 
-	public Vector3 vector () {
-		return vector;
+	private OctreeCalc child;
+
+	public OctreeCalc() {
+		for (int i = 0; i < vectors.length; ++i) {
+			vectors[i] = new Vector3();
+		}
+		for (int i = 0; i < boundingBoxs.length; ++i) {
+			boundingBoxs[i] = new BoundingBox();
+		}
 	}
 
-	public Vector3 vector2 () {
-		return vector2;
+	public OctreeCalc child () {
+		if (child == null) {
+			child = new OctreeCalc();
+		}
+
+		if (octree() != child.octree()) {
+			child.octree(octree());
+		}
+
+		child.reset();
+		return child;
+	}
+
+	public void octree (Octree<?, ?> octree) {
+		this.octree = octree;
+	}
+
+	public Octree<?, ?> octree () {
+		return octree;
+	}
+
+	public Vector3 vector () {
+//		if (vectorIndex >= vectors.length) {
+//			throw new GdxRuntimeException("no more vectors");
+//		}
+		return vectors[vectorIndex++];
+	}
+
+	public void reset () {
+		vectorIndex = 0;
+		boundingBoxIndex = 0;
 	}
 
 	public BoundingBox boundingBox () {
-		return boundingBox;
+		return boundingBoxs[boundingBoxIndex++];
 	}
 
 	public Array<OctreeNode<?>> nodeArray (int capacity) {
@@ -27,8 +66,8 @@ public class OctreeCalc {
 			nodeArray = new Array<>(true, capacity, OctreeNode.class);
 		}
 
-		if (nodeArray.size != capacity) {
-			nodeArray.setSize(capacity);
+		if (nodeArray.items.length < capacity) {
+			nodeArray = new Array<>(true, capacity, OctreeNode.class);
 		}
 
 		return nodeArray;

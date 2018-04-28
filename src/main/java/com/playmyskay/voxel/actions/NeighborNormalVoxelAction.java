@@ -2,6 +2,8 @@ package com.playmyskay.voxel.actions;
 
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.math.collision.BoundingBox;
+import com.playmyskay.octree.common.OctreeCalc;
+import com.playmyskay.octree.common.OctreeCalcPoolManager;
 import com.playmyskay.octree.traversal.IntersectionData;
 import com.playmyskay.voxel.actions.common.Action;
 import com.playmyskay.voxel.actions.common.ActionData;
@@ -14,12 +16,10 @@ import com.playmyskay.voxel.level.VoxelLevel;
  */
 
 public class NeighborNormalVoxelAction extends Action {
+	private OctreeCalc calc = OctreeCalcPoolManager.obtain();
 
-	public NeighborNormalVoxelAction() {
-	}
-
-	public static Vector3 calculateNormal (IntersectionData<VoxelLevel> entry) {
-		BoundingBox boundindBox = entry.node.boundingBox();
+	public static Vector3 calculateNormal (IntersectionData<VoxelLevel> entry, OctreeCalc calc) {
+		BoundingBox boundindBox = entry.node.boundingBox(calc);
 		Vector3 cnt = boundindBox.getCenter(new Vector3());
 
 		// Build direction vector via difference
@@ -42,11 +42,18 @@ public class NeighborNormalVoxelAction extends Action {
 
 	@Override
 	public ActionResult run (ActionData actionData) {
+		calc.reset();
+		calc.octree(actionData.octree());
 		actionData.intersectionDataList().forEach(intersectionData -> {
-			intersectionData.normal = calculateNormal(intersectionData);
+			intersectionData.normal = calculateNormal(intersectionData, calc);
 			actionData.pointList()
-					.add(intersectionData.node.boundingBox().getCenter(new Vector3()).add(intersectionData.normal));
+					.add(intersectionData.node.boundingBox(calc).getCenter(calc.vector()).add(intersectionData.normal));
 		});
 		return ActionResult.OK;
+	}
+
+	@Override
+	public void dispose () {
+		OctreeCalcPoolManager.free(calc);
 	}
 }

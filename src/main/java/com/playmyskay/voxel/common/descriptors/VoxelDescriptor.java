@@ -16,4 +16,11 @@ public class VoxelDescriptor extends OctreeNodeDescriptor {
 		updateInstant = false;
 	}
 
+	public VoxelDescriptor copy () {
+		VoxelDescriptor copyDescriptor = new VoxelDescriptor(this.getBaseActionType());
+		copyDescriptor.updateInstant = this.updateInstant;
+		copyDescriptor.voxelTypeDescriptor = voxelTypeDescriptor.copy();
+		return copyDescriptor;
+	}
+
 }

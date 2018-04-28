@@ -1,6 +1,8 @@
 package com.playmyskay.voxel.actions.common;
 
-public abstract class Action {
+import com.badlogic.gdx.utils.Disposable;
+
+public abstract class Action implements Disposable {
 
 	public Action() {
 	}

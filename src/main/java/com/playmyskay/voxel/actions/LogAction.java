@@ -76,4 +76,9 @@ public class LogAction extends Action {
 		return ActionResult.OK;
 	}
 
+	@Override
+	public void dispose () {
+
+	}
+
 }

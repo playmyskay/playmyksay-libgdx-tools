@@ -4,7 +4,7 @@ import com.badlogic.gdx.math.collision.BoundingBox;
 import com.badlogic.gdx.utils.GdxRuntimeException;
 import com.playmyskay.octree.common.OctreeNodeDescriptor;
 
-public class VoxelLevelChunkSpace extends VoxelLevel {
+public class VoxelLevelChunkSpace1 extends VoxelLevel {
 	private VoxelLevel[] childs;
 //	private BoundingBox boundingBox = new BoundingBox();
 //
@@ -17,11 +17,6 @@ public class VoxelLevelChunkSpace extends VoxelLevel {
 //	public BoundingBox boundingBox () {
 //		return boundingBox;
 //	}
-
-	@Override
-	public BoundingBox boundingBox () {
-		throw new GdxRuntimeException("never call this method");
-	}
 
 	@Override
 	public void update (VoxelLevel node, OctreeNodeDescriptor descriptor) {
@@ -37,6 +32,11 @@ public class VoxelLevelChunkSpace extends VoxelLevel {
 	public VoxelLevel[] childs (VoxelLevel[] childs) {
 		this.childs = childs;
 		return this.childs;
+	}
+
+	@Override
+	public BoundingBox boundingBox () {
+		throw new GdxRuntimeException("never call this method");
 	}
 
 }

@@ -75,25 +75,17 @@ class RenderUpdateManager implements IChunkUpdateListener {
 //	}
 
 	private void addChunk (RenderUpdateData ud) {
-		ChunkRenderable chunkRenderable = null;//getChunkRenderable(ud.voxelLevelChunk);
-//		if (chunkRenderable != null) {
-//			if (ud.voxelLevelChunk.planeList.size == 0) {
-//				removeChunk(ud);
-//			}
-//		} else {
+		// only chunks with planes or skip
 		if (ud.voxelLevelChunk.planeList.size == 0) return;
 
-//			chunkRenderable = createChunkRenderable(ud.voxelLevelChunk);
-//			chunkRenderable.voxelLevelChunk = ud.voxelLevelChunk;
-//			chunkRenderable.renderableData = new RenderableData();
-//			ud.renderableData = chunkRenderable.renderableData;
+		// new renderable data
 		ud.renderableData = new RenderableData();
 
 		// calculate the whole chunk mesh data to prepare the final mesh instance
 		ChunkMesher.calculateChunkMeshData(ud.voxelWorld, ud.voxelLevelChunk, ud.renderableData);
 
+		// update
 		renderableHandler.update(ud);
-//		}
 	}
 
 	private void removeChunk (RenderUpdateData ud) {
