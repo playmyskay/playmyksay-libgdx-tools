@@ -1,9 +1,12 @@
 package com.playmyskay.voxel.render;
 
+import java.util.ArrayList;
+
 import com.badlogic.gdx.graphics.Mesh;
 import com.badlogic.gdx.math.Vector3;
 import com.playmyskay.voxel.face.VoxelFacePlane;
 import com.playmyskay.voxel.level.VoxelLevelChunk;
+import com.playmyskay.voxel.plane.PlaneListPool;
 import com.playmyskay.voxel.world.VoxelWorld;
 
 public class ChunkMesher {
@@ -33,10 +36,19 @@ public class ChunkMesher {
 		rd.vertexCount(0);
 
 		Vector3 tmpVector = new Vector3();
-		for (VoxelFacePlane plane : chunk.planeList) {
-//			Direction direction = VoxelFace.getDirection(plane.faceBits);
-			calculatePlaneMeshData(world, chunk, plane, rd, tmpVector);
+		for (ArrayList<VoxelFacePlane> planeList : chunk.planeListList) {
+			for (VoxelFacePlane plane : planeList) {
+//				Direction direction = VoxelFace.getDirection(plane.faceBits);
+				calculatePlaneMeshData(world, chunk, plane, rd, tmpVector);
+			}
 		}
+
+		for (ArrayList<VoxelFacePlane> list : chunk.planeListList) {
+			PlaneListPool.get().free(list);
+		}
+
+		chunk.planeListList.clear();
+
 		rd.vertices().shrink();
 	}
 

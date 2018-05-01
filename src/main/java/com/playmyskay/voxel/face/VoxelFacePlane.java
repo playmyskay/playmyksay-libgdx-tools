@@ -36,4 +36,15 @@ public class VoxelFacePlane implements Disposable {
 	public boolean isDisposed () {
 		return disposed;
 	}
+
+	public void reset () {
+		x1 = -1f;
+		x2 = -1f;
+		y1 = -1f;
+		y2 = -1f;
+		z1 = -1f;
+		z2 = -1f;
+		faceBits = 0;
+		disposed = false;
+	}
 }

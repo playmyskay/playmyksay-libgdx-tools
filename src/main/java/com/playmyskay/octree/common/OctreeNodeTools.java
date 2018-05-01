@@ -155,7 +155,7 @@ public class OctreeNodeTools {
 			OctreeNode<N> node, OctreeCalc calc) {
 		calc = calc.child();
 
-		Array<OctreeNode<?>> nodes = calc.nodeArray(4);
+		Array<OctreeNode<?>> nodes = calc.nodeArray(7);
 		nodes.clear();
 
 		int i = 0;

@@ -8,6 +8,7 @@ import java.util.concurrent.Future;
 
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.math.collision.BoundingBox;
+import com.badlogic.gdx.utils.GdxRuntimeException;
 import com.playmyskay.octree.common.OctreeCalc;
 import com.playmyskay.octree.common.OctreeCalcPoolManager;
 import com.playmyskay.octree.common.OctreeNodeDescriptor.BaseActionType;
@@ -23,6 +24,7 @@ import com.playmyskay.voxel.level.VoxelLevelEntity;
 import com.playmyskay.voxel.look.VoxelLookType;
 import com.playmyskay.voxel.processing.JobProcessor;
 import com.playmyskay.voxel.render.UpdateType;
+import com.playmyskay.voxel.world.IVoxelWorldProvider.WorldData;
 
 public class ChunkManager {
 	private Map<Vector3, VoxelLevelChunk> cachedChunkSet;
@@ -30,6 +32,8 @@ public class ChunkManager {
 	private Map<Vector3, VoxelLevelChunk> tmpChunkSet;
 	private List<IChunkUpdateListener> updateListeners = new ArrayList<>();
 	private VoxelWorld voxelWorld;
+	private VolumePool volumePool = new VolumePool();
+	private FacePool facePool = new FacePool();
 //	private Pool<Vector3> vectorPool = new Pool<Vector3>() {
 //
 //		@Override
@@ -60,9 +64,9 @@ public class ChunkManager {
 		System.out.printf("updateOctree: w(%d) h(%d) d(%d) -> %d\n", width, height, depth, width * height * depth);
 
 		Vector3 offset = bounds.getMin(new Vector3());
-		offset.x = offset.x - offset.x % 16;
-		offset.y = offset.y - offset.y % 16;
-		offset.z = offset.z - offset.z % 16;
+		offset.x = offset.x - offset.x % VoxelWorld.CHUNK_SIZE;
+		offset.y = offset.y - offset.y % VoxelWorld.CHUNK_SIZE;
+		offset.z = offset.z - offset.z % VoxelWorld.CHUNK_SIZE;
 
 		int chunk_pos_x = 0;
 		int chunk_pos_y = 0;
@@ -144,10 +148,14 @@ public class ChunkManager {
 						public void run () {
 							OctreeCalc calc2 = OctreeCalcPoolManager.obtain();
 							calc2.octree(calc.octree());
-							VoxelLevelEntity[][][] volume = createChunk2(world, chunk2, chunk_pos_x, chunk_pos_y,
-									chunk_pos_z, lookDescriptorMap, calc2);
-							chunk2.rebuild(volume);
+							VoxelLevelEntity[][][] volume = volumePool.obtain();
+							byte[][][] faces = facePool.obtain();
+							createChunk2(world, chunk2, volume, chunk_pos_x, chunk_pos_y, chunk_pos_z,
+									lookDescriptorMap, calc2);
+							chunk2.rebuild(volume, faces);
 							OctreeCalcPoolManager.free(calc2);
+							volumePool.free(volume);
+							facePool.free(faces);
 						}
 					}));
 				}
@@ -338,62 +346,75 @@ public class ChunkManager {
 		}
 	}
 
-	private static VoxelLevelEntity[][][] createChunk2 (VoxelWorld world, VoxelLevelChunk chunk, int offset_x,
-			int offset_y, int offset_z, Map<VoxelLookType, VoxelDescriptor> lookDescriptorMap, OctreeCalc calc) {
+	private static void createChunk2 (VoxelWorld world, VoxelLevelChunk chunk, VoxelLevelEntity[][][] volume,
+			int worldPosition_x, int worldPosition_y, int worldPosition_z,
+			Map<VoxelLookType, VoxelDescriptor> lookDescriptorMap, OctreeCalc calc) {
 //		LevelIndexer levelIndexer = new LevelIndexer();
 //		levelIndexer.nodeArry = new Array<OctreeNode<?>>(3);
 //		calc.levelIndexer();
 
-		VoxelLevelEntity[][][] volume = new VoxelLevelEntity[VoxelWorld.CHUNK_SIZE][VoxelWorld.CHUNK_SIZE][VoxelWorld.CHUNK_SIZE];
-		processChildNode(world, volume, chunk, 4, offset_x, offset_y, offset_z, lookDescriptorMap);
+		int chunkLevelIndex = world.voxelOctree.nodeProvider.levelIndex(VoxelLevelChunk.class);
+		int[] levelDivider = new int[chunkLevelIndex + 1];
+		int divide = 0;
+		for (int i = 1; i <= chunkLevelIndex; ++i) {
+			switch (i) {
+			case 6:
+				divide = VoxelWorld.CHUNK_SIZE / 32;
+				break;
+			case 5:
+				divide = VoxelWorld.CHUNK_SIZE / 16;
+				break;
+			case 4:
+				divide = VoxelWorld.CHUNK_SIZE / 8;
+				break;
+			case 3:
+				divide = VoxelWorld.CHUNK_SIZE / 4;
+				break;
+			case 2:
+				divide = VoxelWorld.CHUNK_SIZE / 2;
+				break;
+			case 1:
+				divide = VoxelWorld.CHUNK_SIZE;
+				break;
+			default:
+				throw new GdxRuntimeException("level not supported");
+			}
+			levelDivider[i] = divide;
+		}
+
+		WorldData worldData = new WorldData();
+		processChildNode(world, worldData, volume, chunk, chunkLevelIndex, levelDivider, worldPosition_x,
+				worldPosition_y, worldPosition_z, 0, 0, 0, lookDescriptorMap);
 
 		calc.reset();
 		world.voxelOctree.addNode(chunk, BaseActionType.add, calc);
 		chunk.valid(true);
-
-		return volume;
 	}
 
-	private static VoxelLevel processChildNode (VoxelWorld world, VoxelLevelEntity[][][] volume, VoxelLevel parentNode,
-			int level, int offset_x, int offset_y, int offset_z,
+	private static VoxelLevel processChildNode (VoxelWorld world, WorldData worldData, VoxelLevelEntity[][][] volume,
+			VoxelLevel parentNode, int level, int[] levelDivider, int worldPosition_x, int worldPosition_y,
+			int worldPosition_z, int offset_x, int offset_y, int offset_z,
 			Map<VoxelLookType, VoxelDescriptor> lookDescriptorMap) {
-		int divide = 0;
+
 		VoxelLevel childNode = null;
 		int index = 0;
-		int pos_x = 0;
-		int pos_y = 0;
-		int pos_z = 0;
+		int calc_offset_x = 0;
+		int calc_offset_y = 0;
+		int calc_offset_z = 0;
 		for (int y = 0; y < 2; ++y) {
 			for (int z = 0; z < 2; ++z) {
 				for (int x = 0; x < 2; ++x) {
-					switch (level) {
-					case 4:
-						divide = 2;
-						break;
-					case 3:
-						divide = 4;
-						break;
-					case 2:
-						divide = 8;
-						break;
-					case 1:
-						divide = 16;
-						break;
-					}
-
-					pos_x = offset_x + (x == 1 ? (VoxelWorld.CHUNK_SIZE / divide) : 0);
-					pos_y = offset_y + (y == 1 ? (VoxelWorld.CHUNK_SIZE / divide) : 0);
-					pos_z = offset_z + (z == 1 ? (VoxelWorld.CHUNK_SIZE / divide) : 0);
+					calc_offset_x = offset_x + (x == 1 ? (VoxelWorld.CHUNK_SIZE / levelDivider[level]) : 0);
+					calc_offset_y = offset_y + (y == 1 ? (VoxelWorld.CHUNK_SIZE / levelDivider[level]) : 0);
+					calc_offset_z = offset_z + (z == 1 ? (VoxelWorld.CHUNK_SIZE / levelDivider[level]) : 0);
 
 					if (level > 1) {
-						childNode = processChildNode(world, volume, null, level - 1, pos_x, pos_y, pos_z,
-								lookDescriptorMap);
+						childNode = processChildNode(world, worldData, volume, null, level - 1, levelDivider,
+								worldPosition_x, worldPosition_y, worldPosition_z, calc_offset_x, calc_offset_y,
+								calc_offset_z, lookDescriptorMap);
 					} else if (level == 1) {
-//						pos_x = pos_x + (x == 1 ? 1 : 0);
-//						pos_y = pos_y + (y == 1 ? 1 : 0);
-//						pos_z = pos_z + (z == 1 ? 1 : 0);
-
-						childNode = createEntityLevel(world, volume, pos_x, pos_y, pos_z, lookDescriptorMap);
+						childNode = createEntityLevel(world, worldData, volume, worldPosition_x, worldPosition_y,
+								worldPosition_z, calc_offset_x, calc_offset_y, calc_offset_z, lookDescriptorMap);
 					}
 
 					if (childNode != null) {
@@ -416,21 +437,19 @@ public class ChunkManager {
 		return parentNode;
 	}
 
-	private static VoxelLevel createEntityLevel (VoxelWorld world, VoxelLevelEntity[][][] volume, int pos_x, int pos_y,
-			int pos_z, Map<VoxelLookType, VoxelDescriptor> lookDescriptorMap) {
-//		VoxelDescriptor grassDescriptor = lookDescriptorMap.get(VoxelLookType.Grass);
-//		VoxelDescriptor waterDescriptor = lookDescriptorMap.get(VoxelLookType.Water);
-//		VoxelDescriptor sandDescriptor = lookDescriptorMap.get(VoxelLookType.Sand);
-
-		if (world.worldProvider.get(pos_x, pos_y, pos_z)) {
-			VoxelDescriptor grassDescriptor = lookDescriptorMap.get(VoxelLookType.Grass);
+	private static VoxelLevel createEntityLevel (VoxelWorld world, WorldData worldData, VoxelLevelEntity[][][] volume,
+			int worldPosition_x, int worldPosition_y, int worldPosition_z, int offset_x, int offset_y, int offset_z,
+			Map<VoxelLookType, VoxelDescriptor> lookDescriptorMap) {
+		worldData.x = worldPosition_x + offset_x;
+		worldData.y = worldPosition_y + offset_y;
+		worldData.z = worldPosition_z + offset_z;
+		if (world.worldProvider.get(worldData)) {
 			VoxelLevelEntity entity = (VoxelLevelEntity) world.voxelOctree.nodeProvider.create(0);
-			entity.descriptor = grassDescriptor.voxelTypeDescriptor;
-			int x = Math.abs(pos_x) % 16;
-			int y = Math.abs(pos_y) % 16;
-			int z = Math.abs(pos_z) % 16;
-			volume[x][y][z] = entity;
+			entity.descriptor = lookDescriptorMap.get(VoxelLookType.Grass).voxelTypeDescriptor;
+			volume[offset_x][offset_y][offset_z] = entity;
 			return entity;
+		} else {
+			volume[offset_x][offset_y][offset_z] = null;
 		}
 		return null;
 	}

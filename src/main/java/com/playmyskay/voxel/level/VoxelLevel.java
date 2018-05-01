@@ -7,7 +7,7 @@ public abstract class VoxelLevel extends OctreeNode<VoxelLevel> implements IVoxe
 
 	@Override
 	public boolean leaf () {
-		return true;
+		return false;
 	}
 
 	@Override

@@ -10,7 +10,7 @@ import com.playmyskay.octree.common.OctreeNodeDescriptor.BaseActionType;
 
 public class Octree<N extends OctreeNode<N>, D extends OctreeNodeDescriptor> {
 	public int curLevel = -1;
-	public int minDepth = 5;
+	public int minDepth = -1;
 	public N rootNode;
 	public IOctreeNodeProvider<N> nodeProvider;
 	private Vector3[] corners = new Vector3[8];
@@ -19,7 +19,8 @@ public class Octree<N extends OctreeNode<N>, D extends OctreeNodeDescriptor> {
 	private List<IOctreeListener<N, D>> octreeListenerList = new ArrayList<>();
 	private OctreeCalc calc = OctreeCalcPoolManager.obtain();
 
-	public Octree() {
+	protected Octree(int minDepth) {
+		this.minDepth = minDepth;
 		for (int i = 0; i < 8; i++) {
 			corners[i] = new Vector3();
 		}

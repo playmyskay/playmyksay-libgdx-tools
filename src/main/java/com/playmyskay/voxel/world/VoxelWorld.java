@@ -76,14 +76,17 @@ public class VoxelWorld {
 	public float update_tick = 0.5f;
 	public IVoxelWorldProvider worldProvider;
 	public IVoxelTypeProvider typeProvider;
-	public int visible_chunk_width = 32;
-	public int visible_chunk_height = 4;
-	public int visible_chunk_depth = 32;
-	public int cached_chunk_width = 32;
-	public int cached_chunk_height = 4;
-	public int cached_chunk_depth = 32;
 
-	public static int CHUNK_SIZE = 16;
+	public static int fix = 32;
+	public int visible_chunk_width = fix;
+	public int visible_chunk_height = 4;
+	public int visible_chunk_depth = fix;
+	public int cached_chunk_width = fix;
+	public int cached_chunk_height = 4;
+	public int cached_chunk_depth = fix;
+
+	public static int CHUNK_LEVEL = 5;
+	public static int CHUNK_SIZE = 32;
 	public static int CHUNK_DIM = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
 
 	public static VoxelWorld create (IVoxelWorldProvider worldProvider, IVoxelTypeProvider typeProvider) {
@@ -98,13 +101,6 @@ public class VoxelWorld {
 		this.updateRunnable = new UpdateRunnable();
 
 		VoxelOctreeProvider.set(voxelOctree);
-//		Runnable r = new Runnable() {
-//			@Override
-//			public void run () {
-//				createWorld();
-//			}
-//		};
-//		new Thread(r).start();
 	}
 
 	public BoundingBox getVisibilityBoundingBox () {

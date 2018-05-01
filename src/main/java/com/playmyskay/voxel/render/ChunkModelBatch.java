@@ -100,7 +100,7 @@ public class ChunkModelBatch extends ModelBatch implements RenderableProvider {
 //	public ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 	private RenderablePool renderablePool = new RenderablePool();
 	private ModelCache modelCache = new ModelCache();
-	private boolean useModelCache = true;
+	private boolean useModelCache = false;
 	private MeshPool meshPool = new MeshPool();
 
 	public ChunkModelBatch() {

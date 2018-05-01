@@ -57,9 +57,9 @@ public class VoxelLevelPool {
 			voxelLevel = entityPool.poll();
 		else if (level == 1)
 			voxelLevel = chunkSpace1Pool.poll();
-		else if (level == 4)
+		else if (level == VoxelWorld.CHUNK_LEVEL)
 			voxelLevel = chunkPool.poll();
-		else if (level > 0 && level < 4)
+		else if (level > 0 && level < VoxelWorld.CHUNK_LEVEL)
 			voxelLevel = chunkSpacePool.poll();
 		else
 			voxelLevel = spacePool.poll();
@@ -69,9 +69,9 @@ public class VoxelLevelPool {
 				voxelLevel = new VoxelLevelEntity();
 			else if (level == 1)
 				voxelLevel = new VoxelLevelChunkSpace1();
-			else if (level == 4)
+			else if (level == VoxelWorld.CHUNK_LEVEL)
 				voxelLevel = new VoxelLevelChunk();
-			else if (level > 0 && level < 4)
+			else if (level > 0 && level < VoxelWorld.CHUNK_LEVEL)
 				voxelLevel = new VoxelLevelChunkSpace();
 			else
 				voxelLevel = new VoxelLevelSpace();
@@ -82,13 +82,14 @@ public class VoxelLevelPool {
 
 	public void free (VoxelLevel level) {
 		if (level instanceof VoxelLevelEntity)
-			entityPool.add((VoxelLevelEntity) level);
+			entityPool.offer((VoxelLevelEntity) level);
 		else if (level instanceof VoxelLevelChunk)
-			chunkPool.add((VoxelLevelChunk) level);
+			chunkPool.offer((VoxelLevelChunk) level);
 		else if (level instanceof VoxelLevelChunkSpace1)
-			chunkSpace1Pool.add((VoxelLevelChunkSpace1) level);
+			chunkSpace1Pool.offer((VoxelLevelChunkSpace1) level);
 		else if (level instanceof VoxelLevelChunkSpace)
-			chunkSpacePool.add((VoxelLevelChunkSpace) level);
-		else if (level instanceof VoxelLevelSpace) spacePool.add((VoxelLevelSpace) level);
+			chunkSpacePool.offer((VoxelLevelChunkSpace) level);
+		else
+			spacePool.offer((VoxelLevelSpace) level);
 	}
 }

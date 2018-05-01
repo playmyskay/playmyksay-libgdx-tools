@@ -10,7 +10,7 @@ public class OctreeCalc {
 	private int vectorIndex = 0;
 	private int boundingBoxIndex = 0;
 	private Vector3[] vectors = new Vector3[16];
-	private BoundingBox[] boundingBoxs = new BoundingBox[8];
+	private BoundingBox[] boundingBoxs = new BoundingBox[16];
 	private Array<OctreeNode<?>> nodeArray;
 
 	private OctreeCalc child;

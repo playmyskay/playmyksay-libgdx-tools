@@ -76,7 +76,7 @@ class RenderUpdateManager implements IChunkUpdateListener {
 
 	private void addChunk (RenderUpdateData ud) {
 		// only chunks with planes or skip
-		if (ud.voxelLevelChunk.planeList.size == 0) return;
+		if (ud.voxelLevelChunk.planeListList.size() == 0) return;
 
 		// new renderable data
 		ud.renderableData = new RenderableData();

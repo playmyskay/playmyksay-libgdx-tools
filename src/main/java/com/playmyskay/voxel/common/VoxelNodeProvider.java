@@ -27,11 +27,18 @@ public class VoxelNodeProvider implements IOctreeNodeProvider<VoxelLevel> {
 	@Override
 	public int levelIndex (Class<?> clazz) {
 		if (clazz.equals(VoxelLevelEntity.class)) return 0;
-		if (clazz.equals(VoxelLevelChunk.class)) return 4;
+		if (clazz.equals(VoxelLevelChunk.class)) return VoxelWorld.CHUNK_LEVEL;
 		return -1;
 	}
 
 	public void free (VoxelLevel node) {
+//		if (!node.leaf() && node.childs() != null) {
+//			for (VoxelLevel child : node.childs()) {
+//				if (child == null) continue;
+//				free(child);
+//			}
+//			node.childs(null);
+//		}
 		poolManager.free(node);
 	}
 
